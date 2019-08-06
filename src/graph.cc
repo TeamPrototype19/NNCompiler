@@ -6,24 +6,25 @@
 #include "graph.hpp"
 
 using namespace std;
-using namespace nnframework;
+
+namespace framework {
 
 Graph::Graph(void) {
 }
 
 Graph::~Graph(void) {
-    nodes_.clear();
+    _nodes.clear();
 }
 
-Graph::PrintInfo(void) {
+void Graph::PrintInfo(void) {
     cout << "graph name: " << _name << endl;
-    cout << "# of nodes: " << _node.size() << endl;
+    cout << "# of nodes: " << _nodes.size() << endl;
 
     for(uint32_t i = 0; i < _entry_nodes.size(); i++)
-        "entry node name: " << _entry_nodes[i]->get_name() << endl;
+        cout << "entry node name: " << _entry_nodes[i]->get_name() << endl;
 
     for(uint32_t i = 0; i < _exit_nodes.size(); i++)
-        "exit  node name: " << _exit_nodes[i]->get_name() << endl;
+        cout << "exit  node name: " << _exit_nodes[i]->get_name() << endl;
 
     cout << "======== Node list ========" << endl;
     for(uint32_t i = 0; i < _nodes.size(); i++) {
@@ -37,7 +38,7 @@ Graph::PrintInfo(void) {
 
         cout << "  + successors  : ";
         for(int j = 0; j < np->get_outdegree(); j++)
-            cout << np->get_sucessor(j)->get_name() << "  ";
+            cout << np->get_successor(j)->get_name() << "  ";
         cout << endl;
 
         cout << endl;
@@ -60,7 +61,7 @@ void Graph::WriteGraphToDotFile(string filename) {
     for(auto node_iter : schedList ) {
         for(auto iter : node_iter->get_successor() ) {
             file << "\t\"" << node_iter->get_name();
-            file << "\t\"" << iter->get_name() << "\";\n";
+            file << "\t->\"" << iter->get_name() << "\";\n";
         }
     }
 
@@ -77,7 +78,7 @@ vector<shared_ptr<Node>> Graph::BfsSchedule(shared_ptr<Node> np) {
     /* Initialize visi flags
      */
     for(uint32_t i = 0; i < _nodes.size() ; i++)
-        vf.insert(make_pair(_nodes[i], flase));
+        vf.insert(make_pair(_nodes[i], false));
 
     /* BFS traverses
      */
@@ -107,7 +108,7 @@ vector<shared_ptr<Node>> Graph::DfsSchedule(shared_ptr<Node> np) {
     /* Initialize visi flags
      */
     for(uint32_t i = 0; i < _nodes.size() ; i++)
-        vf.insert(make_pair(_nodes[i], flase));
+        vf.insert(make_pair(_nodes[i], false));
 
     /* BFS traverses
      */
@@ -129,4 +130,4 @@ vector<shared_ptr<Node>> Graph::DfsSchedule(shared_ptr<Node> np) {
     return sched;
 }
 
-
+}   // namespace framework

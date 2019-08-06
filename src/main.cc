@@ -1,21 +1,22 @@
 #include <unistd.h>
 #include <sys/stat.h>
-#include <fncl.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cstring>
+#include <fcntl.h>
 
 #include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/text_format.h>
+#include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include "caffe.pb.h"
-#include "graph.h"
-#include "network.h"
+#include "graph.hpp"
+#include "network.hpp"
 
 using namespace std;
 using namespace caffe;
-using namespace nnframework;
+using namespace framework;
 
 using google::protobuf::io::FileInputStream;
 using google::protobuf::io::FileOutputStream;
@@ -27,7 +28,7 @@ using google::protobuf::Message;
 
 bool ReadProtoFromTextFile(const char *filename, Message *proto) {
     int fd = open(filename, O_RDONLY);
-	if( fd = -1 ) {
+	if( fd == -1 ) {
 		cerr << "File not found: " << filename << endl;
 		return false;
 	}
@@ -42,7 +43,6 @@ bool ReadProtoFromTextFile(const char *filename, Message *proto) {
 int main(int argc, char **argv) {
 	char option;
 	const char *optstring = "g:o:";
-	bool debug_print = false;
 
 	if( argc < 3 ) {
 		cerr << "Not enough inputs." << endl;
@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
 	if( ! ReadProtoFromTextFile( graphFileName.c_str(), &net_param ) )
 		return 0;
 
-	//DAGraph dag( net_param );
-	//dag.WriteGraphAsDotFile( outputFileName );
+	Network network( net_param, "NN" );
+	network.WriteNetworkToDotFile( outputFileName );
 
 	return 0;
 }

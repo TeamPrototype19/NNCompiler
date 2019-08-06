@@ -3,10 +3,16 @@
 #include <queue>
 #include <stack>
 
-#include "Node.h"
+#include "node.hpp"
 
 using namespace std;
-using namespace nnframework;
+
+namespace framework {
+
+Node::Node() {
+    _name = "unknown";
+    _type = "unknown";
+}
 
 Node::Node(string name, string type) {
     _name = name;
@@ -26,11 +32,11 @@ string Node::get_type(void) {
     return _type;
 }
 
-string Node::get_indegree(void) {
+int Node::get_indegree(void) {
     return _predecessor.size();
 }
 
-string Node::get_outdegree(void) {
+int Node::get_outdegree(void) {
     return _successor.size();
 }
 
@@ -46,7 +52,7 @@ shared_ptr<Node> Node::get_predecessor(int i) {
     return _predecessor[i];
 }
 
-shared_ptr<Node> Node::get_successor(void) {
+shared_ptr<Node> Node::get_successor(int i) {
     return _successor[i];
 }
 
@@ -68,3 +74,4 @@ void Node::set_successor(vector<shared_ptr<Node>> np_list) {
     _successor = np_list;
 }
 
+}   // namespace framework
