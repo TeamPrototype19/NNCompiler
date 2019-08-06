@@ -1,28 +1,30 @@
 project(nnc)
-cmake_minimum_required(VERISON 3.10)
+cmake_minimum_required(VERSION 3.0)
 include_directories(
-	"$(CMAKE_CURRENT_SOURCE_DIR}/inc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/inc"
 )
 file(GLOB SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
 )
 set(CMAKE_FXX_FLAGS "--std=c++11 -m64 -Wall -Wno-comment -g")
-FIND_PACKAGE(Protobuf REQUIRED)
+set(PROTOBUF_LIBRARY     "${CMAKE_CURRENT_SOURCE_DIR}/libs/lib")
+set(PROTOBUF_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/include")
+find_package(Protobuf REQUIRED)
+
+
+add_custom_command (
+	OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/src/caffe.pb.cc"
+	OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/inc/caffe.pb.h"
+	COMMENT "Compiling proto schema file."
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/proto/caffe.proto"
+	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/proto"
+	COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/libs/bin/protoc" --cpp_out=./ caffe.proto
+	COMMAND mv caffe.pb.h  "${CMAKE_CURRENT_SOURCE_DIR}/inc"
+	COMMAND mv caffe.pb.cc "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
 
 add_executable(nnc
 	"${SRCS}"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/caffe.pb.cc"
 )
-
-add_custom_commnd (
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/caffe.pb.cc"
-	"${CMAKE_CURRENT_SOURCE_DIR}/inc/caffe.pb.h"
-	COMMENT "Compiling proto schema file."
-	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/proto/caffe.proto"
-	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/proto"
-	COMMAND protoc --cpp_out=./ caffe.proto
-	COMMAND mv caffe.pb.h  "${CMAKE_CURRENT_SOURCE_DIR}/inc"
-	COMMAND mv caffe.pb.cc "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-
 target_link_libraries(nnc ${PROTOBUF_LIBRARIES})

@@ -3,7 +3,7 @@
 #include <queue>
 #include <stack>
 
-#include "graph.h"
+#include "graph.hpp"
 
 using namespace std;
 using namespace nnframework;
