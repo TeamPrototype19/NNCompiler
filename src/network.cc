@@ -33,15 +33,16 @@ Network::Network(const caffe::NetParameter &net, string type) {
     else
         _type = "unknown";
 
+    vector<int> dim;
+    for(int j = 0; j < net.input_dim_size(); j++)
+        dim.push_back( net.input_dim(j) );
+    input_blob.set_dim( dim );
+
     for(int i = 0; i < net.input_size(); i++) {
         string name = net.input(i)+"_node";
         shared_ptr<Layer> p_layer = make_shared<Layer>(name);
         _nodes.push_back( p_layer );
         _name2node.insert( make_pair(p_layer->get_name(), p_layer) );
-
-        vector<int> dim;
-        for(int j = 0; j < net.input_dim_size(); j++)
-            dim.push_back( net.input_dim(j) );
 
         shared_ptr<Blob> p_blob = make_shared<Blob>(net.input(i));
         p_layer->add_successor( p_blob );

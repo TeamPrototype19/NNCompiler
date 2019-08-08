@@ -16,6 +16,11 @@ public:
     Blob(string name);
     ~Blob(void);
 
+    template<typename First, typename... Args>
+    void set_dim(First first, Args... args);
+    void set_dim(int arg);
+    void set_dim(std::vector<int> dim);
+
 private:
     vector<int> _dim;
 };

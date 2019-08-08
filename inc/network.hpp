@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#include "types.h"
+#include "blob.hpp"
 #include "graph.hpp"
 #include "caffe.pb.h"
 
@@ -20,6 +22,9 @@ public:
 
     void WriteNetworkToDotFile(string filename);
 private:
+    /* Input blob dimension
+     */
+    Blob    input_blob;
 };
 
 }
