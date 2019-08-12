@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "blob.hpp"
+#include "layer.hpp"
 
 using namespace std;
 
@@ -28,6 +29,18 @@ void Blob::set_dim(int arg) {
 
 void Blob::set_dim(std::vector<int> dim) {
     _dim = dim;
+}
+
+vector<int> Blob::get_dim(void) {
+    return _dim;
+}
+
+void Blob::add_producer(shared_ptr<NNLayer> lp) {
+    add_predecessor( static_pointer_cast<Node>(lp) );
+}
+
+void Blob::add_consumer(shared_ptr<NNLayer> lp) {
+    add_successor( static_pointer_cast<Node>(lp) );
 }
 
 }   // namespace framework

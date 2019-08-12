@@ -3,12 +3,15 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "node.hpp"
 
 using namespace std;
 
 namespace framework {
+
+class NNLayer;
 
 class Blob : public Node {
 public:
@@ -20,6 +23,10 @@ public:
     void set_dim(First first, Args... args);
     void set_dim(int arg);
     void set_dim(std::vector<int> dim);
+    vector<int> get_dim(void);
+
+    void add_producer(shared_ptr<NNLayer> lp);
+    void add_consumer(shared_ptr<NNLayer> lp);
 
 private:
     vector<int> _dim;

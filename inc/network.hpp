@@ -20,6 +20,8 @@ public:
     Network(const caffe::NetParameter& net, string type);
     ~Network(void);
 
+    shared_ptr<Blob> get_blob_by_name(string name);
+
     void WriteNetworkToDotFile(string filename);
 private:
     /* Input blob dimension

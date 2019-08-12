@@ -19,11 +19,6 @@ Node::Node(string name, string type) {
     _type = type;
 }
 
-Node::~Node(void) {
-    _successor.clear();
-    _predecessor.clear();
-}
-
 string Node::get_name(void) {
     return _name;
 }

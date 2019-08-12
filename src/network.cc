@@ -40,13 +40,13 @@ Network::Network(const caffe::NetParameter &net, string type) {
 
     for(int i = 0; i < net.input_size(); i++) {
         string name = net.input(i)+"_node";
-        shared_ptr<Layer> p_layer = make_shared<Layer>(name);
+        shared_ptr<NNLayer> p_layer = make_shared<NNLayer>(name);
         _nodes.push_back( p_layer );
         _name2node.insert( make_pair(p_layer->get_name(), p_layer) );
 
         shared_ptr<Blob> p_blob = make_shared<Blob>(net.input(i));
-        p_layer->add_successor( p_blob );
-        p_blob->add_predecessor( p_layer );
+        p_layer->add_output_blob( p_blob );
+        p_blob->add_producer( p_layer );
         _nodes.push_back( p_blob );
         _name2node.insert( make_pair(p_blob->get_name(), p_blob) );
     }
@@ -55,7 +55,7 @@ Network::Network(const caffe::NetParameter &net, string type) {
      */
     for(int i = 0; i < net.layer_size(); i++) {
         const caffe::LayerParameter& layer = net.layer(i);
-        shared_ptr<Layer> p_layer = make_shared<Layer>(layer);
+        shared_ptr<NNLayer> p_layer = make_shared<NNLayer>(layer);
         _nodes.push_back( p_layer );
         _name2node.insert( make_pair(p_layer->get_name(), p_layer) );
 
@@ -67,9 +67,10 @@ Network::Network(const caffe::NetParameter &net, string type) {
             string blob_name = layer.bottom(j);
             if( inplace_name.find(blob_name) != inplace_name.end() )
                 blob_name = inplace_name[blob_name];
-            shared_ptr<Node> p_blob = _name2node[blob_name];
-            p_layer->add_predecessor( p_blob );
-            p_blob->add_successor( p_layer );
+            //shared_ptr<Node> p_blob = _name2node[blob_name];
+            shared_ptr<Blob> p_blob = get_blob_by_name(blob_name);
+            p_layer->add_input_blob( p_blob );
+            p_blob->add_consumer( p_layer );
         }
 
         /* Creates blobs and top connection
@@ -92,8 +93,8 @@ Network::Network(const caffe::NetParameter &net, string type) {
             }
 
             shared_ptr<Blob> p_blob = make_shared<Blob>(blob_name);
-            p_layer->add_successor( p_blob );
-            p_blob->add_predecessor( p_layer );
+            p_layer->add_output_blob( p_blob );
+            p_blob->add_producer( p_layer );
             _nodes.push_back( p_blob );
             _name2node.insert( make_pair(p_blob->get_name(), p_blob) );
         }
@@ -109,6 +110,15 @@ Network::Network(const caffe::NetParameter &net, string type) {
     }
     
     return;
+}
+
+shared_ptr<Blob> Network::get_blob_by_name(string name) {
+    shared_ptr<Node> p = _name2node[name];
+    auto bp = dynamic_pointer_cast<Blob>(p);
+    if( bp == nullptr )
+        throw runtime_error("Network::get_blob_by_name; node is not blob.");
+
+    return bp;
 }
 
 void Network::WriteNetworkToDotFile(string filename) {
@@ -136,67 +146,5 @@ void Network::WriteNetworkToDotFile(string filename) {
 
     file.close();
 }
-
-#if 0
-vector<shared_ptr<Node>> Network::BfsSchedule(shared_ptr<Node> np) {
-    map<shared_ptr<Node>, bool> vf;    // visit flag
-    queue<shared_ptr<Node>> vq;        // visit queue
-    vector<shared_ptr<Node>> sched;    // BFS scheduled node pointers
-
-    /* Initialize visi flags
-     */
-    for(uint32_t i = 0; i < _nodes.size() ; i++)
-        vf.insert(make_pair(_nodes[i], false));
-
-    /* BFS traverses
-     */
-    vq.push( np );
-    while( ! vq.empty() ) {
-        np = vq.front();
-        vq.pop();
-
-        if( vf[ np ] == false ) {
-            sched.push_back( np );
-            vf[ np ] = true;
-            for(int i = 0; i < np->get_outdegree(); i++) {
-                if( vf[ np->get_successor(i) ] == false )
-                    vq.push( np->get_successor(i) );
-            }
-        }
-    }
-
-    return sched;
-}
-
-vector<shared_ptr<Node>> Network::DfsSchedule(shared_ptr<Node> np) {
-    map<shared_ptr<Node>, bool> vf;    // visit flag
-    stack<shared_ptr<Node>> vs;        // visit stack
-    vector<shared_ptr<Node>> sched;    // BFS scheduled node pointers
-
-    /* Initialize visi flags
-     */
-    for(uint32_t i = 0; i < _nodes.size() ; i++)
-        vf.insert(make_pair(_nodes[i], false));
-
-    /* BFS traverses
-     */
-    vs.push( np );
-    while( ! vs.empty() ) {
-        np = vs.top();
-        vs.pop();
-
-        if( vf[ np ] == false ) {
-            sched.push_back( np );
-            vf[ np ] = true;
-            for(int i = np->get_outdegree()-1; i >= 0; i--) {
-                if( vf[ np->get_successor(i) ] == false )
-                    vs.push( np->get_successor(i) );
-            }
-        }
-    }
-
-    return sched;
-}
-#endif
 
 }   // namespace framework
