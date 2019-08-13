@@ -39,14 +39,14 @@ Network::Network(const caffe::NetParameter &net, string type) {
     input_blob.set_dim( dim );
 
     for(int i = 0; i < net.input_size(); i++) {
-        string name = net.input(i)+"_node";
-        shared_ptr<NNLayer> p_layer = make_shared<NNLayer>(name);
-        _nodes.push_back( p_layer );
-        _name2node.insert( make_pair(p_layer->get_name(), p_layer) );
+        //string name = net.input(i)+"_node";
+        //shared_ptr<NNLayer> p_layer = create_layer( name );
+        //_nodes.push_back( p_layer );
+        //_name2node.insert( make_pair(p_layer->get_name(), p_layer) );
 
         shared_ptr<Blob> p_blob = make_shared<Blob>(net.input(i));
-        p_layer->add_output_blob( p_blob );
-        p_blob->add_producer( p_layer );
+        //p_layer->add_output_blob( p_blob );
+        //p_blob->add_producer( p_layer );
         _nodes.push_back( p_blob );
         _name2node.insert( make_pair(p_blob->get_name(), p_blob) );
     }
@@ -54,17 +54,17 @@ Network::Network(const caffe::NetParameter &net, string type) {
     /* Layer processing
      */
     for(int i = 0; i < net.layer_size(); i++) {
-        const caffe::LayerParameter& layer = net.layer(i);
-        shared_ptr<NNLayer> p_layer = make_shared<NNLayer>(layer);
+        const caffe::LayerParameter& lparam = net.layer(i);
+        shared_ptr<NNLayer> p_layer = create_layer( lparam );
         _nodes.push_back( p_layer );
         _name2node.insert( make_pair(p_layer->get_name(), p_layer) );
 
-        cout << "processing... : " << layer.name() << endl;
+        cout << "processing... : " << lparam.name() << endl;
 
         /* Connection
          */
-        for(int j = 0; j < layer.bottom_size(); j++) {
-            string blob_name = layer.bottom(j);
+        for(int j = 0; j < lparam.bottom_size(); j++) {
+            string blob_name = lparam.bottom(j);
             if( inplace_name.find(blob_name) != inplace_name.end() )
                 blob_name = inplace_name[blob_name];
             //shared_ptr<Node> p_blob = _name2node[blob_name];
@@ -75,8 +75,8 @@ Network::Network(const caffe::NetParameter &net, string type) {
 
         /* Creates blobs and top connection
          */
-        for(int j = 0; j < layer.top_size(); j++) {
-            string blob_name = layer.top(j);
+        for(int j = 0; j < lparam.top_size(); j++) {
+            string blob_name = lparam.top(j);
 
             if( _name2node.find(blob_name) != _name2node.end() ) {
                 if( inplace_cnt.find(blob_name) == inplace_cnt.end() )
@@ -112,6 +112,46 @@ Network::Network(const caffe::NetParameter &net, string type) {
     return;
 }
 
+shared_ptr<NNLayer> Network::create_layer(const caffe::LayerParameter& lparam) {
+    if( ! lparam.has_type() )
+        throw runtime_error("Network::create_layer; layer don't have type parameter!");
+
+    string type = lparam.type();
+    if( type.compare("Convolution") == 0 ) {
+        shared_ptr<ConvLayer> layer = make_shared<ConvLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("ReLU") == 0 ) {
+        shared_ptr<ReluLayer> layer = make_shared<ReluLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("Pooling") == 0 ) {
+        shared_ptr<PoolLayer> layer = make_shared<PoolLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("InnerProduct") == 0 ) {
+        shared_ptr<FullyConnectedLayer> layer = make_shared<FullyConnectedLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("Concat") == 0 ) {
+        shared_ptr<ConcatLayer> layer = make_shared<ConcatLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("Softmax") == 0 ) {
+        shared_ptr<SoftmaxLayer> layer = make_shared<SoftmaxLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("Input") == 0 ) {
+        shared_ptr<InputLayer> layer = make_shared<InputLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else {
+        cerr << "[ERROR] unsupported Layer type: " << type << endl;
+        throw runtime_error("Network::create_layer; Not supported layer type!");
+    }
+
+}
+
 shared_ptr<Blob> Network::get_blob_by_name(string name) {
     shared_ptr<Node> p = _name2node[name];
     auto bp = dynamic_pointer_cast<Blob>(p);
@@ -134,8 +174,12 @@ void Network::WriteNetworkToDotFile(string filename) {
 
     for(auto node_iter : schedList ) {
         for(auto iter : node_iter->get_successor() ) {
-            if( node_iter->get_type().compare("layer") == 0 )
-                file << "\t\"" << node_iter->get_name() << "\" [shape=box,style=filled,fillcolor=\".7 .3 1.0\"]\n";
+            if( node_iter->get_type().compare("layer") == 0 ) {
+                shared_ptr<NNLayer> layer = dynamic_pointer_cast<NNLayer>(node_iter);
+                file << "\t\"" << node_iter->get_name() \
+                     << "\" [shape=box,style=filled,fillcolor=\".7 .3 1.0\", label=\"" \
+                     << node_iter->get_name() << layer->getLayerInfoStr() << "\"]\n";
+            }
             if( node_iter->get_type().compare("blob") == 0 )
                 file << "\t\"" << node_iter->get_name() << "\" [fontsize=10]\n";
             file << "\t\"" << node_iter->get_name() << "\" -> \"" << iter->get_name() << "\";\n";

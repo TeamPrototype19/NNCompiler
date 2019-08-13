@@ -14,20 +14,45 @@ namespace framework {
 
 class Blob;
 
+enum NNLayerType {
+    Input = 0,
+    Convolution,
+    Relu,
+    Pooling,
+    Concat,
+    Scale,
+    Softmax,
+    FullyConnected
+};
+
 class NNLayer : public Node {
 public:
     NNLayer(void);
-    NNLayer(string name);
+    NNLayer(string name, NNLayerType ltype);
     NNLayer(const caffe::LayerParameter& layer_param);
     ~NNLayer(void);
 
     void add_output_blob(shared_ptr<Blob> bp);
     void add_input_blob(shared_ptr<Blob> bp);
-    virtual void ComputeOutputSize(void) {}
+    virtual void ComputeOutputSize(void) = 0;
+    virtual string getLayerInfoStr(void) = 0;
 
-private:
+    map<NNLayerType, string> ltype2str = {
+        {Input         , "Input"},
+        {Convolution   , "Convolution"},
+        {Relu          , "ReLU"},
+        {Pooling       , "Pooling"},
+        {Concat        , "Concat"},
+        {Scale         , "Scale"},
+        {Softmax       , "Softmax"},
+        {FullyConnected, "FullyConnected"}
+    };
+
+protected:
     vector<int> get_input_blob_size(int i);
     vector<int> get_output_blob_size(int i);
+
+    NNLayerType _layer_type;
 };
 
 
@@ -38,12 +63,40 @@ public:
     ConvLayer(const caffe::LayerParameter& layer_param);
     ~ConvLayer(void);
     virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
 
 private:
     int _kernel_w, _kernel_h;
     int _stride_w, _stride_h;
     int _pad_w, _pad_h;
     int group;
+};
+
+
+/* Input layer class definition
+ */
+class InputLayer : public NNLayer {
+public:
+    InputLayer(const caffe::LayerParameter& layer_param);
+    ~InputLayer(void);
+    virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
+
+private:
+    vector<int> _dim;
+};
+
+
+/* Relu layer class definition
+ */
+class ReluLayer : public NNLayer {
+public:
+    ReluLayer(const caffe::LayerParameter& layer_param);
+    ~ReluLayer(void);
+    virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
+
+private:
 };
 
 
@@ -58,6 +111,7 @@ public:
     PoolLayer(const caffe::LayerParameter& layer_param);
     ~PoolLayer(void);
     virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
 
 private:
     int _kernel_w, _kernel_h;
@@ -75,6 +129,7 @@ public:
     ConcatLayer(const caffe::LayerParameter& layer_param);
     ~ConcatLayer(void);
     virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
 
 private:
 };
@@ -87,9 +142,24 @@ public:
     FullyConnectedLayer(const caffe::LayerParameter& layer_param);
     ~FullyConnectedLayer(void);
     virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
 
 private:
 };
+
+
+/* Softmax layer class definition
+ */
+class SoftmaxLayer : public NNLayer {
+public:
+    SoftmaxLayer(const caffe::LayerParameter& layer_param);
+    ~SoftmaxLayer(void);
+    virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
+
+private:
+};
+
 
 }
 

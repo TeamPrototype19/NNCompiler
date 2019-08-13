@@ -5,14 +5,18 @@
 using namespace std;
 namespace framework {
 
-ConvLayer::ConvLayer(const caffe::LayerParameter& layer_param)
-    : NNLayer(layer_param.name()) {
+ConvLayer::ConvLayer(const caffe::LayerParameter& lparam) 
+    : NNLayer(lparam.name(), Convolution) {
 }
 
 ConvLayer::~ConvLayer(void) {
 }
 
 void ConvLayer::ComputeOutputSize(void) {
+}
+
+string ConvLayer::getLayerInfoStr(void) {
+    return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
 }   // namespace framework

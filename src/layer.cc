@@ -13,7 +13,8 @@ NNLayer::NNLayer(const caffe::LayerParameter& layer_param)
     : Node(layer_param.name(), "layer") {
 }
 
-NNLayer::NNLayer(string name) : Node(name, "layer") {
+NNLayer::NNLayer(string name, NNLayerType ltype) : Node(name, "layer") {
+    _layer_type = ltype;
 }
 
 NNLayer::~NNLayer(void) {

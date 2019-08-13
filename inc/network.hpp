@@ -21,6 +21,7 @@ public:
     ~Network(void);
 
     shared_ptr<Blob> get_blob_by_name(string name);
+    shared_ptr<NNLayer> create_layer(const caffe::LayerParameter& lparam);
 
     void WriteNetworkToDotFile(string filename);
 private:
