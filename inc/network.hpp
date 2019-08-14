@@ -23,11 +23,13 @@ public:
     shared_ptr<Blob> get_blob_by_name(string name);
     shared_ptr<NNLayer> create_layer(const caffe::LayerParameter& lparam);
 
+    vector<shared_ptr<NNLayer>> ScheduleLayers(void);
     void WriteNetworkToDotFile(string filename);
 private:
     /* Input blob dimension
      */
     Blob    input_blob;
+    vector<shared_ptr<NNLayer>> sched_layers;
 };
 
 }

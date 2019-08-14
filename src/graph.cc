@@ -110,7 +110,7 @@ vector<shared_ptr<Node>> Graph::DfsSchedule(shared_ptr<Node> np) {
     for(uint32_t i = 0; i < _nodes.size() ; i++)
         vf.insert(make_pair(_nodes[i], false));
 
-    /* BFS traverses
+    /* DFS traverses
      */
     vs.push( np );
     while( ! vs.empty() ) {

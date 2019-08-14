@@ -20,6 +20,14 @@ NNLayer::NNLayer(string name, NNLayerType ltype) : Node(name, "layer") {
 NNLayer::~NNLayer(void) {
 }
 
+NNLayerType NNLayer::get_layer_type() {
+    return _layer_type;
+}
+
+string NNLayer::get_layer_type_str() {
+    return ltype2str[ _layer_type ];
+}
+
 /* IFM/OFM blob APIs
  */
 void NNLayer::add_output_blob( shared_ptr<Blob> bp ) {

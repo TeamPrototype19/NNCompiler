@@ -21,11 +21,13 @@ Network::Network(const caffe::NetParameter &net, string type) {
     map<string, string> inplace_name;
     map<string, int>    inplace_cnt;
 
+
     // set graph
     if( net.has_name() )
         _name = net.name();
     else
         _name = "unknown";
+
 
     // set graph type
     if( type.length() > 0 )
@@ -50,6 +52,7 @@ Network::Network(const caffe::NetParameter &net, string type) {
         _nodes.push_back( p_blob );
         _name2node.insert( make_pair(p_blob->get_name(), p_blob) );
     }
+
 
     /* Layer processing
      */
@@ -100,6 +103,7 @@ Network::Network(const caffe::NetParameter &net, string type) {
         }
     }
 
+
     /* Find entry node and exit nodes
      */
     for(uint32_t i = 0; i < _nodes.size() ; i++) {
@@ -108,6 +112,18 @@ Network::Network(const caffe::NetParameter &net, string type) {
         if( _nodes[i]->get_outdegree() == 0 )
             _exit_nodes.push_back( _nodes[i] );
     }
+
+
+    /* Output blob size calculation
+     */
+    sched_layers = ScheduleLayers();
+
+#if 1   // DEBUG
+    for(auto layer: sched_layers) {
+        cout << "name = " << layer->get_name();
+        cout << "\ttype = " << layer->get_layer_type_str() << endl;
+    }
+#endif
     
     return;
 }
@@ -160,6 +176,60 @@ shared_ptr<Blob> Network::get_blob_by_name(string name) {
 
     return bp;
 }
+
+vector<shared_ptr<NNLayer>> Network::ScheduleLayers(void) {
+    map<shared_ptr<Node>, bool> vf;    // visit flag
+    stack<shared_ptr<Node>> vs;        // visit stack
+    vector<shared_ptr<NNLayer>> nnlayer_list;
+    shared_ptr<Node> np;
+    
+    /* Initialize visi flags
+     */
+    for(uint32_t i = 0; i < _nodes.size() ; i++)
+        vf.insert(make_pair(_nodes[i], false));
+
+    /* DFS traverses
+     */
+    for(auto entry_nd : _entry_nodes)
+        vs.push( entry_nd );
+
+    while( ! vs.empty() ) {
+        np = vs.top();
+        vs.pop();
+
+        if( vf[ np ] == false ) {
+            vf[ np ] = true;
+
+            /* Save the node pointer if the node is NNLayer
+             */
+            shared_ptr<NNLayer> nnlayer;
+            if( (nnlayer = dynamic_pointer_cast<NNLayer>( np )) )
+                nnlayer_list.push_back( nnlayer );
+
+            for(int i = np->get_outdegree()-1; i >= 0; i--) {
+                if( vf[ np->get_successor(i) ] == false ) {
+                    auto succ = np->get_successor(i);
+                    /* check that the node can be visited.
+                     * Condition of visit: predecessors of the node
+                     * should be already visited.
+                     */
+                    bool visit_possible = true;
+                    for(auto nd : succ->get_predecessor())
+                        if( vf[ nd ] == false )
+                            visit_possible = false;
+
+                    if( visit_possible )
+                        vs.push( np->get_successor(i) );
+                }
+
+            }
+        }
+    }
+
+    return nnlayer_list;
+}
+
+
 
 void Network::WriteNetworkToDotFile(string filename) {
     ofstream file;

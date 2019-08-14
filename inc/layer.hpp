@@ -32,6 +32,8 @@ public:
     NNLayer(const caffe::LayerParameter& layer_param);
     ~NNLayer(void);
 
+    NNLayerType get_layer_type();
+    string get_layer_type_str();
     void add_output_blob(shared_ptr<Blob> bp);
     void add_input_blob(shared_ptr<Blob> bp);
     virtual void ComputeOutputSize(void) = 0;
