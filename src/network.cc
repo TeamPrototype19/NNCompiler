@@ -161,6 +161,18 @@ shared_ptr<NNLayer> Network::create_layer(const caffe::LayerParameter& lparam) {
         shared_ptr<InputLayer> layer = make_shared<InputLayer>(lparam);
         return static_pointer_cast<NNLayer>(layer);
     }
+    else if( type.compare("BatchNorm") == 0 ) {
+        shared_ptr<BatchNormLayer> layer = make_shared<BatchNormLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("Scale") == 0 ) {
+        shared_ptr<ScaleLayer> layer = make_shared<ScaleLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
+    else if( type.compare("Dropout") == 0 ) {
+        shared_ptr<DropoutLayer> layer = make_shared<DropoutLayer>(lparam);
+        return static_pointer_cast<NNLayer>(layer);
+    }
     else {
         cerr << "[ERROR] unsupported Layer type: " << type << endl;
         throw runtime_error("Network::create_layer; Not supported layer type!");

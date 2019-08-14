@@ -22,7 +22,9 @@ enum NNLayerType {
     Concat,
     Scale,
     Softmax,
-    FullyConnected
+    FullyConnected,
+    BatchNorm,
+    Dropout
 };
 
 class NNLayer : public Node {
@@ -47,7 +49,9 @@ public:
         {Concat        , "Concat"},
         {Scale         , "Scale"},
         {Softmax       , "Softmax"},
-        {FullyConnected, "FullyConnected"}
+        {FullyConnected, "FullyConnected"},
+        {BatchNorm     , "BatchNorm"},
+        {Dropout       , "DropOut"}
     };
 
 protected:
@@ -95,6 +99,45 @@ class ReluLayer : public NNLayer {
 public:
     ReluLayer(const caffe::LayerParameter& layer_param);
     ~ReluLayer(void);
+    virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
+
+private:
+};
+
+
+/* Batch Normalization layer class definition
+ */
+class BatchNormLayer : public NNLayer {
+public:
+    BatchNormLayer(const caffe::LayerParameter& layer_param);
+    ~BatchNormLayer(void);
+    virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
+
+private:
+};
+
+
+/* Scale layer class definition
+ */
+class ScaleLayer : public NNLayer {
+public:
+    ScaleLayer(const caffe::LayerParameter& layer_param);
+    ~ScaleLayer(void);
+    virtual void ComputeOutputSize(void) override;
+    virtual string getLayerInfoStr(void) override;
+
+private:
+};
+
+
+/* Drop out layer class definition
+ */
+class DropoutLayer : public NNLayer {
+public:
+    DropoutLayer(const caffe::LayerParameter& layer_param);
+    ~DropoutLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
 
