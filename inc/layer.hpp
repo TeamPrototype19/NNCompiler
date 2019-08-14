@@ -57,6 +57,7 @@ public:
 protected:
     vector<int> get_input_blob_size(int i);
     vector<int> get_output_blob_size(int i);
+    void set_output_blob_size(int i, vector<int>);
 
     NNLayerType _layer_type;
 };

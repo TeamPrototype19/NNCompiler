@@ -43,4 +43,19 @@ void Blob::add_consumer(shared_ptr<NNLayer> lp) {
     add_successor( static_pointer_cast<Node>(lp) );
 }
 
+string Blob::getSizeInfoStr(void) {
+    string a;
+
+    if( _dim.size() == 0 )
+        return a;
+
+    a += "[";
+    int i = 0;
+    for(; i < ((int)_dim.size())-1; i++) {
+        a += to_string(_dim[i]) + ",";
+    }
+    a += to_string(_dim[i]) + "]";
+    return a;
+}
+
 }   // namespace framework

@@ -21,6 +21,7 @@ InputLayer::~InputLayer(void) {
 }
 
 void InputLayer::ComputeOutputSize(void) {
+    set_output_blob_size(0, _dim);
 }
 
 string InputLayer::getLayerInfoStr(void) {

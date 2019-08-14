@@ -24,6 +24,7 @@ public:
     void set_dim(int arg);
     void set_dim(std::vector<int> dim);
     vector<int> get_dim(void);
+    string getSizeInfoStr(void);
 
     void add_producer(shared_ptr<NNLayer> lp);
     void add_consumer(shared_ptr<NNLayer> lp);

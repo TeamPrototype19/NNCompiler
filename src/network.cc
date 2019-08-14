@@ -117,6 +117,8 @@ Network::Network(const caffe::NetParameter &net, string type) {
     /* Output blob size calculation
      */
     sched_layers = ScheduleLayers();
+    for(auto layer : sched_layers)
+        layer->ComputeOutputSize();
 
 #if 1   // DEBUG
     for(auto layer: sched_layers) {
@@ -262,8 +264,11 @@ void Network::WriteNetworkToDotFile(string filename) {
                      << "\" [shape=box,style=filled,fillcolor=\".7 .3 1.0\", label=\"" \
                      << node_iter->get_name() << layer->getLayerInfoStr() << "\"]\n";
             }
-            if( node_iter->get_type().compare("blob") == 0 )
-                file << "\t\"" << node_iter->get_name() << "\" [fontsize=10]\n";
+            if( node_iter->get_type().compare("blob") == 0 ) {
+                shared_ptr<Blob> blob = dynamic_pointer_cast<Blob>(node_iter);
+                file << "\t\"" << node_iter->get_name() << "\" [fontsize=10, label=\"" \
+                     << node_iter->get_name() << "\\n" << blob->getSizeInfoStr() << "\"]\n";
+            }
             file << "\t\"" << node_iter->get_name() << "\" -> \"" << iter->get_name() << "\";\n";
         }
     }

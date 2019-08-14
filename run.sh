@@ -1,6 +1,6 @@
 echo "========= Inception V3 network =========="
-#./nnc -g testsets/deploy_inception-v3.prototxt -o output.dot
-#dot -Tpng inceptionv1.dot -o inceptionv1.png
+./nnc -g testsets/deploy_inception-v3.prototxt -o inception-v3.dot
+dot -Tpng inception-v3.dot -o inception-v3.png
 echo "========= Lenet network        =========="
 ./nnc -g testsets/lenet.prototxt -o lenet.dot
 dot -Tpng lenet.dot -o lenet.png

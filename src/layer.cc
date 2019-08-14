@@ -39,25 +39,37 @@ void NNLayer::add_input_blob( shared_ptr<Blob> bp ) {
 }
 
 vector<int> NNLayer::get_input_blob_size(int i) {
-    if( (unsigned int) i >= _successor.size() )
+    if( (unsigned int) i >= _predecessor.size() )
         throw out_of_range("NNLayer::get_input_blob_size; i over the limit");
 
-    auto blob = dynamic_pointer_cast<Blob>(_successor[i]);
+    auto blob = dynamic_pointer_cast<Blob>(_predecessor[i]);
     if( blob == nullptr )
-        throw runtime_error("NNLayer::get_input_blob_size; successor is not blob");
+        throw runtime_error("NNLayer::get_input_blob_size; predecessor is not blob");
 
     return blob->get_dim();
 }
 
 vector<int> NNLayer::get_output_blob_size(int i) {
-    if( (unsigned int) i >= _predecessor.size() )
-        throw out_of_range("NNLayer::get_input_blob_size: i over the limit");
+    if( (unsigned int) i >= _successor.size() )
+        throw out_of_range("NNLayer::get_output_blob_size: i over the limit");
 
-    auto blob = dynamic_pointer_cast<Blob>(_predecessor[i]);
+    auto blob = dynamic_pointer_cast<Blob>(_successor[i]);
     if( blob == nullptr )
-        throw runtime_error("NNLayer::get_input_blob_size: predecessor is not blob");
+        throw runtime_error("NNLayer::get_output_blob_size: successor is not blob");
 
     return blob->get_dim();
 }
+
+void NNLayer::set_output_blob_size(int i, vector<int> b_size) {
+    if( (unsigned int) i >= _successor.size() )
+        throw out_of_range("NNLayer::get_input_blob_size: i over the limit");
+
+    auto blob = dynamic_pointer_cast<Blob>(_successor[i]);
+    if( blob == nullptr )
+        throw runtime_error("NNLayer::get_input_blob_size: successor is not blob");
+
+    blob->set_dim(b_size);
+}
+
 
 }   // namespace framework
