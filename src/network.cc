@@ -36,6 +36,20 @@ Network::Network(const caffe::NetParameter &net, string type) {
         _type = "unknown";
 
 
+    /* Preprocessing: get a blob name list
+     */
+    map<string, int> blob_name_list;
+    for(int i = 0; i < net.input_size(); i++)
+        blob_name_list[ net.input(i) ] = 0;
+    for(int i = 0; i < net.layer_size(); i++) {
+        const caffe::LayerParameter& lparam = net.layer(i);
+        for(int j = 0; j < lparam.bottom_size(); j++)
+            blob_name_list[ lparam.bottom(j) ] = 0;
+        for(int j = 0; j < lparam.top_size(); j++)
+            blob_name_list[ lparam.top(j) ] = 0;
+    }
+
+
     /* Input blob processing
      */
     if( net.input_size() != net.input_shape_size() )
@@ -44,7 +58,7 @@ Network::Network(const caffe::NetParameter &net, string type) {
     for(int i = 0; i < net.input_size(); i++) {
         shared_ptr<Blob> p_blob = make_shared<Blob>(net.input(i));
         _nodes.push_back( p_blob );
-        _name2node.insert( make_pair(p_blob->get_name(), p_blob) );
+        _name2blobs.insert( make_pair(p_blob->get_name(), p_blob) );
 
         vector<int> dim;
         auto ishape = net.input_shape(i);
@@ -60,36 +74,37 @@ Network::Network(const caffe::NetParameter &net, string type) {
         const caffe::LayerParameter& lparam = net.layer(i);
         shared_ptr<NNLayer> p_layer = create_layer( lparam );
         _nodes.push_back( p_layer );
-        _name2node.insert( make_pair(p_layer->get_name(), p_layer) );
+        _name2layers.insert( make_pair(p_layer->get_name(), p_layer) );
 
         cout << "processing... : " << lparam.name() << endl;
 
-        /* Connection
+        /* Bottom Connection processing
          */
         for(int j = 0; j < lparam.bottom_size(); j++) {
             string blob_name = lparam.bottom(j);
             if( inplace_name.find(blob_name) != inplace_name.end() )
                 blob_name = inplace_name[blob_name];
-            //shared_ptr<Node> p_blob = _name2node[blob_name];
-            shared_ptr<Blob> p_blob = get_blob_by_name(blob_name);
+            shared_ptr<Blob> p_blob = _name2blobs[blob_name];
             p_layer->add_input_blob( p_blob );
             p_blob->add_consumer( p_layer );
         }
 
-        /* Creates blobs and top connection
+        /* Top Connection processing and Creates blob nodes
          */
         for(int j = 0; j < lparam.top_size(); j++) {
             string blob_name = lparam.top(j);
 
-            if( _name2node.find(blob_name) != _name2node.end() ) {
+            /* check that inplance representation is used
+             */
+            if( _name2blobs.find(blob_name) != _name2blobs.end() ) {
                 if( inplace_cnt.find(blob_name) == inplace_cnt.end() )
                     inplace_cnt[blob_name] = 0;
 
                 string new_name;
                 do {
-                    new_name = blob_name + "_ip" + to_string( inplace_cnt[blob_name] );
+                    new_name = blob_name + "_" + to_string( inplace_cnt[blob_name] );
                     inplace_cnt[blob_name]++;
-                } while( _name2node.find(new_name) != _name2node.end() );
+                } while( blob_name_list.find(new_name) != blob_name_list.end() );
 
                 inplace_name[blob_name] = new_name;
                 blob_name = new_name;
@@ -99,7 +114,7 @@ Network::Network(const caffe::NetParameter &net, string type) {
             p_layer->add_output_blob( p_blob );
             p_blob->add_producer( p_layer );
             _nodes.push_back( p_blob );
-            _name2node.insert( make_pair(p_blob->get_name(), p_blob) );
+            _name2blobs.insert( make_pair(p_blob->get_name(), p_blob) );
         }
     }
 
@@ -116,12 +131,12 @@ Network::Network(const caffe::NetParameter &net, string type) {
 
     /* Output blob size calculation
      */
-    sched_layers = ScheduleLayers();
-    for(auto layer : sched_layers)
+    _sched_layers = ScheduleLayers();
+    for(auto layer : _sched_layers)
         layer->ComputeOutputSize();
 
 #if 1   // DEBUG
-    for(auto layer: sched_layers) {
+    for(auto layer: _sched_layers) {
         cout << "name = " << layer->get_name();
         cout << "\ttype = " << layer->get_layer_type_str() << endl;
     }
@@ -182,6 +197,7 @@ shared_ptr<NNLayer> Network::create_layer(const caffe::LayerParameter& lparam) {
 
 }
 
+/*
 shared_ptr<Blob> Network::get_blob_by_name(string name) {
     shared_ptr<Node> p = _name2node[name];
     auto bp = dynamic_pointer_cast<Blob>(p);
@@ -190,6 +206,7 @@ shared_ptr<Blob> Network::get_blob_by_name(string name) {
 
     return bp;
 }
+*/
 
 vector<shared_ptr<NNLayer>> Network::ScheduleLayers(void) {
     map<shared_ptr<Node>, bool> vf;    // visit flag
@@ -260,16 +277,32 @@ void Network::WriteNetworkToDotFile(string filename) {
         for(auto iter : node_iter->get_successor() ) {
             if( node_iter->get_type().compare("layer") == 0 ) {
                 shared_ptr<NNLayer> layer = dynamic_pointer_cast<NNLayer>(node_iter);
-                file << "\t\"" << node_iter->get_name() \
+                file << "\t\"" << node_iter->get_name() << "_L" \
                      << "\" [shape=box,style=filled,fillcolor=\".7 .3 1.0\", label=\"" \
                      << node_iter->get_name() << layer->getLayerInfoStr() << "\"]\n";
+                file << "\t\"" << node_iter->get_name() << "_L\" -> \"" \
+                               << iter->get_name() << "_B\";\n";
             }
             if( node_iter->get_type().compare("blob") == 0 ) {
                 shared_ptr<Blob> blob = dynamic_pointer_cast<Blob>(node_iter);
-                file << "\t\"" << node_iter->get_name() << "\" [fontsize=10, label=\"" \
+                file << "\t\"" << node_iter->get_name() << "_B" \
+                     << "\" [fontsize=10, label=\"" \
                      << node_iter->get_name() << "\\n" << blob->getSizeInfoStr() << "\"]\n";
+                file << "\t\"" << node_iter->get_name() << "_B\" -> \"" \
+                               << iter->get_name() << "_L\";\n";
             }
-            file << "\t\"" << node_iter->get_name() << "\" -> \"" << iter->get_name() << "\";\n";
+        }
+    }
+
+    /* Last data node processing
+     * (last data node don't have successor node)
+     */
+    for(auto node : _exit_nodes) {
+        shared_ptr<Blob> blob = dynamic_pointer_cast<Blob>(node);
+        if( blob != nullptr ) {
+            file << "\t\"" << node->get_name() << "_B" \
+                 << "\" [fontsize=10, label=\"" \
+                 << node->get_name() << "\\n" << blob->getSizeInfoStr() << "\"]\n";
         }
     }
 

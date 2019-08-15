@@ -20,7 +20,7 @@ public:
     Network(const caffe::NetParameter& net, string type);
     ~Network(void);
 
-    shared_ptr<Blob> get_blob_by_name(string name);
+    //shared_ptr<Blob> get_blob_by_name(string name);
     shared_ptr<NNLayer> create_layer(const caffe::LayerParameter& lparam);
 
     vector<shared_ptr<NNLayer>> ScheduleLayers(void);
@@ -28,7 +28,9 @@ public:
 private:
     /* Input blob dimension
      */
-    vector<shared_ptr<NNLayer>> sched_layers;
+    vector<shared_ptr<NNLayer>>       _sched_layers;
+    map<string, shared_ptr<NNLayer>>  _name2layers;
+    map<string, shared_ptr<Blob>>     _name2blobs;
 };
 
 }
