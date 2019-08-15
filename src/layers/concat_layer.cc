@@ -7,6 +7,8 @@ namespace framework {
 
 ConcatLayer::ConcatLayer(const caffe::LayerParameter& lparam) 
     : NNLayer(lparam.name(), Concat) {
+
+
 }
 
 ConcatLayer::~ConcatLayer(void) {

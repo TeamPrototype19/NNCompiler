@@ -1,6 +1,7 @@
 #ifndef _NODE_H_
 #define _NODE_H_
 
+#include "log.h"
 #include <vector>
 #include <string>
 #include <memory>

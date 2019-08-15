@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 
+#include "log.h"
 #include "types.h"
 #include "blob.hpp"
 #include "graph.hpp"

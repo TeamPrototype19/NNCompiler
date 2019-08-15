@@ -10,6 +10,7 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
+#include "log.h"
 #include "caffe.pb.h"
 #include "graph.hpp"
 #include "network.hpp"
@@ -44,6 +45,8 @@ int main(int argc, char **argv) {
 	char option;
 	const char *optstring = "g:o:";
 
+    open_log_file("log.txt");
+
 	if( argc < 3 ) {
 		cerr << "Not enough inputs." << endl;
 		cerr << "nnc -g [graph file] -o [output file]" << endl;
@@ -69,6 +72,8 @@ int main(int argc, char **argv) {
 
 	Network network( net_param, "NN" );
 	network.WriteNetworkToDotFile( outputFileName );
+
+    close_log_file();
 
 	return 0;
 }

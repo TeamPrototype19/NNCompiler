@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 
+#include "log.h"
 #include "node.hpp"
 
 using namespace std;

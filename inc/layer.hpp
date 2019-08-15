@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 
+#include "log.h"
 #include "node.hpp"
 #include "caffe.pb.h"
 
@@ -76,7 +77,7 @@ private:
     int _kernel_w, _kernel_h;
     int _stride_w, _stride_h;
     int _pad_w, _pad_h;
-    int group;
+    int _group;
 };
 
 
@@ -150,8 +151,9 @@ private:
  */
 class PoolLayer : public NNLayer {
     enum PoolType {
-        AVG_POOL,
-        MAX_POOL
+        MAX_POOL,
+        AVE_POOL,
+        STOCHASTIC_POOL
     };
 public:
     PoolLayer(const caffe::LayerParameter& layer_param);
@@ -163,7 +165,7 @@ private:
     int _kernel_w, _kernel_h;
     int _stride_w, _stride_h;
     int _pad_w, _pad_h;
-    bool _global_pool;
+    bool _global_pooling;
     PoolType _pool_type;
 };
 
