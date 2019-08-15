@@ -28,7 +28,6 @@ public:
 private:
     /* Input blob dimension
      */
-    Blob    input_blob;
     vector<shared_ptr<NNLayer>> sched_layers;
 };
 

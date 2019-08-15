@@ -35,22 +35,22 @@ Network::Network(const caffe::NetParameter &net, string type) {
     else
         _type = "unknown";
 
-    vector<int> dim;
-    for(int j = 0; j < net.input_dim_size(); j++)
-        dim.push_back( net.input_dim(j) );
-    input_blob.set_dim( dim );
+
+    /* Input blob processing
+     */
+    if( net.input_size() != net.input_shape_size() )
+        throw runtime_error("Network::Network; input_size != input_shape_size!");
 
     for(int i = 0; i < net.input_size(); i++) {
-        //string name = net.input(i)+"_node";
-        //shared_ptr<NNLayer> p_layer = create_layer( name );
-        //_nodes.push_back( p_layer );
-        //_name2node.insert( make_pair(p_layer->get_name(), p_layer) );
-
         shared_ptr<Blob> p_blob = make_shared<Blob>(net.input(i));
-        //p_layer->add_output_blob( p_blob );
-        //p_blob->add_producer( p_layer );
         _nodes.push_back( p_blob );
         _name2node.insert( make_pair(p_blob->get_name(), p_blob) );
+
+        vector<int> dim;
+        auto ishape = net.input_shape(i);
+        for(int j = 0; j < ishape.dim_size(); j++)
+            dim.push_back( ishape.dim(j) );
+        p_blob->set_dim(dim);
     }
 
 
