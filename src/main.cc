@@ -41,9 +41,28 @@ bool ReadProtoFromTextFile(const char *filename, Message *proto) {
 	return success;
 }
 
+bool ReadProtoFromBinaryFile(const char *filename, Message *proto) {
+    int fd = open(filename, O_RDONLY);
+	if( fd == -1 ) {
+		cerr << "File not found: " << filename << endl;
+		return false;
+	}
+
+    ZeroCopyInputStream* raw_input = new FileInputStream(fd);
+    CodedInputStream* coded_input = new CodedInputStream(raw_input);
+    coded_input->SetTotalBytesLimit(INT_MAX, 536870912);
+
+	bool success = proto->ParseFromCodedStream(coded_input);
+	delete coded_input;
+	delete raw_input;
+	close(fd);
+	return success;
+}
+
+
 int main(int argc, char **argv) {
 	char option;
-	const char *optstring = "g:o:";
+	const char *optstring = "g:o:w:";
 
     open_log_file("log.txt");
 
@@ -55,6 +74,7 @@ int main(int argc, char **argv) {
 
 	string graphFileName = "graphNet.prototxt";
 	string outputFileName = "output.dot";
+    string weightFileName = "graphNet.caffemodel";
 
     while( -1 != (option = getopt(argc, argv, optstring))) {
 		switch(option) {
@@ -62,13 +82,22 @@ int main(int argc, char **argv) {
 						break;
 			case 'o':	outputFileName = optarg;
 						break;
-
+			case 'w':	weightFileName = optarg;
+						break;
 		}
 	}
 
 	caffe::NetParameter net_param;
-	if( ! ReadProtoFromTextFile( graphFileName.c_str(), &net_param ) )
+	if( ! ReadProtoFromTextFile( graphFileName.c_str(), &net_param ) ) {
+        cerr << "RaedProtoFromTextFile is failed.\n";
 		return 0;
+    }
+
+	caffe::NetParameter wgt_param;
+	if( ! ReadProtoFromBinaryFile( weightFileName.c_str(), &wgt_param ) ) {
+        cerr << "RaedProtoFromBinaryFile is failed.\n";
+		return 0;
+    }
 
 	Network network( net_param, "NN" );
 	network.WriteNetworkToDotFile( outputFileName );
