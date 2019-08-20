@@ -26,6 +26,7 @@ public:
 
     vector<shared_ptr<NNLayer>> ScheduleLayers(void);
     void WriteNetworkToDotFile(string filename);
+    void loadWeight(const caffe::NetParameter& wgt);
 private:
     /* Input blob dimension
      */

@@ -197,16 +197,16 @@ shared_ptr<NNLayer> Network::create_layer(const caffe::LayerParameter& lparam) {
 
 }
 
-/*
-shared_ptr<Blob> Network::get_blob_by_name(string name) {
-    shared_ptr<Node> p = _name2node[name];
-    auto bp = dynamic_pointer_cast<Blob>(p);
-    if( bp == nullptr )
-        throw runtime_error("Network::get_blob_by_name; node is not blob.");
 
-    return bp;
+void Network::loadWeight(const caffe::NetParameter& wgt) {
+    cout << "Network::loadWeight() processing...\n";
+
+    for(int i = 0; i < wgt.layer_size(); i++) {
+        const caffe::LayerParameter& lparam = wgt.layer(i);
+        cout << "layer_name = " << lparam.name() << "\n";
+    }
 }
-*/
+
 
 vector<shared_ptr<NNLayer>> Network::ScheduleLayers(void) {
     map<shared_ptr<Node>, bool> vf;    // visit flag

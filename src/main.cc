@@ -100,6 +100,7 @@ int main(int argc, char **argv) {
     }
 
 	Network network( net_param, "NN" );
+    network.loadWeight( wgt_param );
 	network.WriteNetworkToDotFile( outputFileName );
 
     close_log_file();
