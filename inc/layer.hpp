@@ -78,6 +78,7 @@ private:
     int _stride_w, _stride_h;
     int _pad_w, _pad_h;
     int _group;
+    int _num_output;
 };
 
 
