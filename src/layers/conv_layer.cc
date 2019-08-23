@@ -81,8 +81,10 @@ void ConvLayer::ComputeOutputSize(void) {
     assert( ib_size.size() == 4 );
 
     // Caffe uses [N=0,C,H,W] dimension representation.
+    // dilated(atrous) convolution is not supported currently
+    // ow = (ib_size[3] + 2*_pad_w - (_kernel_w*(dilation-1)+1))/_stride_w + 1;
     int ow = (ib_size[3] + 2*_pad_w - _kernel_w) / _stride_w + 1;
-    int oh = (ib_size[2] + 2*_pad_w - _kernel_w) / _stride_w + 1;
+    int oh = (ib_size[2] + 2*_pad_h - _kernel_h) / _stride_h + 1;
     int oc = _num_output;
 
     vector<int> ob_size = {ib_size[0], oc, oh, ow};

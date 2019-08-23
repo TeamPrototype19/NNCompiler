@@ -167,6 +167,7 @@ private:
     int _stride_w, _stride_h;
     int _pad_w, _pad_h;
     bool _global_pooling;
+    int _num_output;
     PoolType _pool_type;
 };
 
