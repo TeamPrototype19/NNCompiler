@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include <string>
 
 using namespace std;
 namespace framework {
@@ -102,7 +103,12 @@ void ConvLayer::ComputeOutputSize(void) {
 }
 
 string ConvLayer::getLayerInfoStr(void) {
-    return " (" + ltype2str[ _layer_type ] + ") ";
+    string msg = " (" + ltype2str[ _layer_type ] + ")";
+    msg += "\nk:" + std::to_string(_kernel_w) + "x" + std::to_string(_kernel_h);
+    msg += " s:" + std::to_string(_stride_w) + "x" + std::to_string(_stride_h);
+    msg += " p:" + std::to_string(_pad_w) + "x" + std::to_string(_pad_h) + " ";
+
+    return msg;
 }
 
 }   // namespace framework

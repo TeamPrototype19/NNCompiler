@@ -78,9 +78,13 @@ void PoolLayer::ComputeOutputSize(void) {
     // ow = (ib_size[3] + 2*_pad_w - (_kernel_w*(dilation-1)+1))/_stride_w +1
     int ow = (ib_size[3] + 2*_pad_w - _kernel_w)/_stride_w + 1;
     int oh = (ib_size[2] + 2*_pad_h - _kernel_h)/_stride_h + 1;
-    int oc = _num_output;
+
+    if( _global_pooling ) {
+        ow = 1;
+        oh = 1;
+    }
     
-    vector<int> ob_size = {ib_size[0], oc, oh, ow};
+    vector<int> ob_size = {ib_size[0], ib_size[1], oh, ow};
     set_output_blob_size(0, ob_size);
 
     if( LOG_LEVEL >=2){
@@ -95,7 +99,12 @@ void PoolLayer::ComputeOutputSize(void) {
 }
 
 string PoolLayer::getLayerInfoStr(void) {
-    return " (" + ltype2str[ _layer_type ] + ") ";
+    string msg = " (" + ltype2str[ _layer_type ] + ")";
+    msg += "\nk:" + std::to_string(_kernel_w) + "x" + std::to_string(_kernel_h);
+    msg += " s:" + std::to_string(_stride_w) + "x" + std::to_string(_stride_h);
+    msg += " p:" + std::to_string(_pad_w) + "x" + std::to_string(_pad_h) + " ";
+
+    return msg;
 }
 
 }   // namespace framework
