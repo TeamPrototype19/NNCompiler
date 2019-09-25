@@ -29,9 +29,13 @@ public:
 
     void add_producer(shared_ptr<NNLayer> lp);
     void add_consumer(shared_ptr<NNLayer> lp);
+    void set_mem_addr(unsigned int addr);
+    void set_index(int index);
 
 private:
     vector<int> _dim;
+    unsigned int _addr;
+    int _index;
 };
 
 }

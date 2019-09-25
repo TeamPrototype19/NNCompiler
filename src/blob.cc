@@ -43,6 +43,14 @@ void Blob::add_consumer(shared_ptr<NNLayer> lp) {
     add_successor( static_pointer_cast<Node>(lp) );
 }
 
+void Blob::set_mem_addr(unsigned int addr) {
+    _addr = addr;
+}
+
+void Blob::set_index(int index) {
+    _index = index;
+}
+
 string Blob::getSizeInfoStr(void) {
     string a;
 

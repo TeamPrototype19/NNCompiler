@@ -16,6 +16,11 @@ namespace framework {
 
 class Network : public Graph {
 public:
+    enum {
+        PASS = 0,
+        FAIL = 1
+    };
+
     Network(void);
     Network(string name);
     Network(const caffe::NetParameter& net, string type);
@@ -27,6 +32,12 @@ public:
     vector<shared_ptr<NNLayer>> ScheduleLayers(void);
     void WriteNetworkToDotFile(string filename);
     void loadWeight(const caffe::NetParameter& wgt);
+
+    /* Functions for network compiling
+     */
+    void Compiling(void);
+    int  CPhase_memory_addr_map(void);
+
 private:
     /* Input blob dimension
      */

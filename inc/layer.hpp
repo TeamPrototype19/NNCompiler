@@ -39,6 +39,8 @@ public:
     string get_layer_type_str();
     void add_output_blob(shared_ptr<Blob> bp);
     void add_input_blob(shared_ptr<Blob> bp);
+    void SetOutputIndexes(int& index);
+    map<shared_ptr<Blob>, vector<int>> GetOutputSize(void);
     virtual void ComputeOutputSize(void) = 0;
     virtual string getLayerInfoStr(void) = 0;
 
