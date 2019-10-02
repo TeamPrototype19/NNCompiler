@@ -36,7 +36,6 @@ public:
     /* Functions for network compiling
      */
     void Compiling(void);
-    int  CPhase_memory_addr_map(void);
 
 private:
     /* Input blob dimension

@@ -6,6 +6,7 @@
 #include "layer.hpp"
 #include "blob.hpp"
 #include "network.hpp"
+#include "memalloc.hpp"
 
 using namespace std;
 
@@ -133,11 +134,9 @@ Network::Network(const caffe::NetParameter &net, string type) {
 
     /* Output blob size calculation
      */
-    int output_index = 0;
     _sched_layers = ScheduleLayers();
     for(auto layer : _sched_layers) {
         layer->ComputeOutputSize();
-        layer->SetOutputIndexes( output_index );
     }
 
 #if 1   // DEBUG
@@ -209,6 +208,8 @@ void Network::loadWeight(const caffe::NetParameter& wgt) {
     for(int i = 0; i < wgt.layer_size(); i++) {
         const caffe::LayerParameter& lparam = wgt.layer(i);
         cout << "layer_name = " << lparam.name() << "\n";
+        if( lparam.blobs_size() > 0 )
+            cout << "  + weight size = " << lparam.blobs(0).data_size() << "\n";
     }
 }
 
@@ -318,36 +319,17 @@ void Network::WriteNetworkToDotFile(string filename) {
 
 
 void Network::Compiling(void) {
-    int ret = 0;
+    bool success = false;
 
     /* PHASE 1: memory address allocation (mapping)
      */
-    if( (ret = CPhase_memory_addr_map()) && ret == FAIL ) {
+    MemoryAlloc  memalloc( _sched_layers, success );
+    if( success == false ) {
         std::cerr << "[ERROR] compiling phase: memory address allocation." << std::endl;
+        return;
     }
 
     return;
-}
-
-int  Network::CPhase_memory_addr_map(void) {
-
-    /* Get total required memory size
-     */
-    for(auto layer : _sched_layers) {
-        map<shared_ptr<Blob>, vector<int>> binfo = layer->GetOutputSize();
-
-        // DEBUG
-#if 0
-        for(auto a : binfo) {
-            cout << "Blob '" << a.first->get_name() << "' size = [";
-            for(int i = 0 ; i < (int)a.second.size()-1 ; i++)
-                cout << a.second[i] << ",";
-            cout << a.second[a.second.size()-1] << "]\n";
-        }
-#endif
-    }
-
-    return PASS;
 }
 
 }   // namespace framework

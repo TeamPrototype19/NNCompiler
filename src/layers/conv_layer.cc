@@ -11,6 +11,13 @@ ConvLayer::ConvLayer(const caffe::LayerParameter& lparam)
 
     const caffe::ConvolutionParameter& param = lparam.convolution_param();
 
+    _kernel_w = 1;
+    _kernel_h = 1;
+    _stride_w = 1;
+    _stride_h = 1;
+    _pad_w = 0;
+    _pad_h = 0;
+
     if( param.has_pad_w() )
         _pad_w = param.pad_w();
     if( param.has_pad_h() )

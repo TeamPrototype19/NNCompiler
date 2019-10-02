@@ -71,23 +71,23 @@ void NNLayer::set_output_blob_size(int i, vector<int> b_size) {
     blob->set_dim(b_size);
 }
 
-void NNLayer::SetOutputIndexes(int& index) {
-    for(auto node : _successor) {
-        auto blob = dynamic_pointer_cast<Blob>(node);
-        blob->set_index( index );
-        index++;
-    }
+int NNLayer::GetOutBlobSize(void) {
+    return get_outdegree();
 }
 
-map<shared_ptr<Blob>, vector<int>> NNLayer::GetOutputSize(void) {
-    map<shared_ptr<Blob>, vector<int>> bufSize;
-
-    for(auto node : _successor) {
-        auto blob = dynamic_pointer_cast<Blob>(node);
-        bufSize[blob] = blob->get_dim();
-    }
-
-    return bufSize;
+int NNLayer::GetInBlobSize(void) {
+    return get_indegree();
 }
+
+shared_ptr<Blob> NNLayer::GetOutBlobPtr(int i) {
+    assert( i < get_outdegree() );
+    return dynamic_pointer_cast<Blob>(_successor[i]);
+}
+
+shared_ptr<Blob> NNLayer::GetInBlobPtr(int i) {
+    assert( i < get_indegree() );
+    return dynamic_pointer_cast<Blob>(_predecessor[i]);
+}
+
 
 }   // namespace framework

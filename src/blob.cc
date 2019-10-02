@@ -47,8 +47,8 @@ void Blob::set_mem_addr(unsigned int addr) {
     _addr = addr;
 }
 
-void Blob::set_index(int index) {
-    _index = index;
+unsigned int Blob::get_mem_addr(void) {
+    return _addr;
 }
 
 string Blob::getSizeInfoStr(void) {
