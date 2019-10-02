@@ -11,6 +11,8 @@ ConvLayer::ConvLayer(const caffe::LayerParameter& lparam)
 
     const caffe::ConvolutionParameter& param = lparam.convolution_param();
 
+    _weight = nullptr;
+    _bias = nullptr;
     _kernel_w = 1;
     _kernel_h = 1;
     _stride_w = 1;
@@ -82,6 +84,10 @@ ConvLayer::ConvLayer(const caffe::LayerParameter& lparam)
 }
 
 ConvLayer::~ConvLayer(void) {
+    if( _weight != nullptr )
+        delete [] _weight;
+    if( _bias != nullptr )
+        delete [] _bias;
 }
 
 void ConvLayer::ComputeOutputSize(void) {
@@ -116,6 +122,30 @@ string ConvLayer::getLayerInfoStr(void) {
     msg += " p:" + std::to_string(_pad_w) + "x" + std::to_string(_pad_h) + " ";
 
     return msg;
+}
+
+void ConvLayer::resizeWeight(int size) {
+    if( _weight != nullptr )
+        delete [] _weight;
+    _weight = new float[ size ];
+    _weight_size = size;
+}
+
+void ConvLayer::resizeBias(int size) {
+    if( _bias != nullptr )
+        delete [] _bias;
+    _bias = new float[ size ];
+    _bias_size = size;
+}
+
+void ConvLayer::setWeight(float val, int index) {
+    assert( index < _weight_size );
+    _weight[ index ] = val;
+}
+
+void ConvLayer::setBias(float val, int index) {
+    assert( index < _bias_size );
+    _bias[ index ] = val;
 }
 
 }   // namespace framework

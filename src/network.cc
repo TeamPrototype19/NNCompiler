@@ -207,9 +207,42 @@ void Network::loadWeight(const caffe::NetParameter& wgt) {
 
     for(int i = 0; i < wgt.layer_size(); i++) {
         const caffe::LayerParameter& lparam = wgt.layer(i);
+        if( lparam.blobs_size() > 0 ) {
+            // Find layer pointer
+            if( _name2layers.find( lparam.name() ) == _name2layers.end() ) {
+                cout << "layer name = " << lparam.name() << endl;
+                throw runtime_error("Network::loadWeight; Can't find layer name!");
+            }
+            auto layer = _name2layers[ lparam.name() ];
+            if( layer->get_layer_type() == Convolution ) {
+                assert( lparam.blobs_size() == 2 );
+                auto clayer = static_pointer_cast<ConvLayer>(layer);
+                clayer->resizeWeight( lparam.blobs(0).data_size() );
+                clayer->resizeBias( lparam.blobs(1).data_size() );
+                for(int j = 0 ; j < lparam.blobs(0).data_size() ; j++)
+                    clayer->setWeight( lparam.blobs(0).data(j) , j );
+                for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
+                    clayer->setBias( lparam.blobs(1).data(j) , j );
+            }
+            else if( layer->get_layer_type() == FullyConnected ) {
+                assert( lparam.blobs_size() == 2 );
+                auto flayer = static_pointer_cast<FullyConnectedLayer>(layer);
+                flayer->resizeWeight( lparam.blobs(0).data_size() );
+                flayer->resizeBias( lparam.blobs(1).data_size() );
+                for(int j = 0 ; j < lparam.blobs(0).data_size() ; j++)
+                    flayer->setWeight( lparam.blobs(0).data(j) , j );
+                for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
+                    flayer->setBias( lparam.blobs(1).data(j) , j );
+            }
+        }
+#if 0
         cout << "layer_name = " << lparam.name() << "\n";
-        if( lparam.blobs_size() > 0 )
-            cout << "  + weight size = " << lparam.blobs(0).data_size() << "\n";
+        if( lparam.blobs_size() > 0 ) {
+            for(int j = 0 ; j < lparam.blobs_size() ; j++) {
+                cout << "  + weight size = " << lparam.blobs(j).data_size() << "\n";
+            }
+        }
+#endif
     }
 }
 
