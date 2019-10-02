@@ -1,0 +1,78 @@
+
+namespace NNExecutor;
+
+/// Instruction OP code definitions
+enum OpCode : ubyte {
+    Convolution,
+    Relu,
+    Pooling,
+    FullyConnected,
+    Softmax
+}
+
+
+union OpInfo {
+    Conv,
+    Relu,
+    Pooling,
+    FC,
+    Softmax
+}
+
+
+table Instruction {
+    opcode:OpCode;
+    operand:OpInfo;
+}
+
+
+/// Operand info of each instruction (kernel)
+table Conv {
+    kernel_name:string;     // only for DEBUG
+    kernel_size:int;
+    stride_size:int;
+    pad_size:int;
+    weight:[float];
+    bias:[float];
+    ibufaddr:ulong;
+    obufaddr:ulong;
+}
+
+table Relu {
+    kernel_name: string;     // only for DEBUG
+    ibufaddr:ulong;
+    obufaddr:ulong;
+}
+
+table Pooling {
+    kernel_name:string;     // only for DEBUG
+    kernel_size:int;
+    stride_size:int;
+    pad_size:int;
+    ibufaddr:ulong;
+    obufaddr:ulong;
+}
+
+table FC {
+    kernel_name:string;     // only for DEBUG
+    weight:[float];
+    bias:[float];
+    ibufaddr:ulong;
+    obufaddr:ulong;
+}
+
+table Softmax {
+    kernel_name:string;     // only for DEBUG
+    op_unit_size:int;
+    ibufaddr:ulong;
+    obufaddr:ulong;
+}
+ 
+
+
+/// root table definition
+table InstPacket {
+    packet:[Instruction];
+}
+
+root_type InstPacket;

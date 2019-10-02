@@ -8,6 +8,7 @@
 #include "log.h"
 #include "node.hpp"
 #include "caffe.pb.h"
+#include "instPacket_generated.h"
 
 using namespace std;
 

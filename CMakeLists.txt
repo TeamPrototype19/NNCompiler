@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 include_directories(
 	"${CMAKE_CURRENT_SOURCE_DIR}/inc"
 	"${CMAKE_CURRENT_SOURCE_DIR}/libs/include"
+	"${CMAKE_CURRENT_SOURCE_DIR}/flatbuffers/include"
 )
 file(GLOB SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
@@ -26,8 +27,19 @@ add_custom_command (
 	COMMAND mv caffe.pb.cc "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
+add_custom_command (
+	OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/inc/instPacket_generated.h"
+	COMMENT "Compiling flatbuffer schema file."
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/fbs/instPacket.fbs"
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/flatbuffers/build/flatc"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/fbs"
+	COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/flatbuffers/build/flatc" --cpp instPacket.fbs
+	COMMAND mv instPacket_generated.h  "${CMAKE_CURRENT_SOURCE_DIR}/inc"
+)
+
 add_executable(nnc
 	"${SRCS}"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/caffe.pb.cc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/inc/instPacket_generated.h"
 )
 target_link_libraries(nnc ${PROTOBUF_LIBRARIES})
