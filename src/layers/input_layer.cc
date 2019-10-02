@@ -28,4 +28,9 @@ string InputLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
+flatbuffers::Offset<NNExecutor::Instruction> 
+InputLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
+    return true;
+}
+
 }   // namespace framework

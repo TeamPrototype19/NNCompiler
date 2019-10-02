@@ -107,4 +107,9 @@ string PoolLayer::getLayerInfoStr(void) {
     return msg;
 }
 
+flatbuffers::Offset<NNExecutor::Instruction> 
+PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
+    return true;
+}
+
 }   // namespace framework

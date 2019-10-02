@@ -29,9 +29,12 @@ table Instruction {
 /// Operand info of each instruction (kernel)
 table Conv {
     kernel_name:string;     // only for DEBUG
-    kernel_size:int;
-    stride_size:int;
-    pad_size:int;
+    kernel_size_w:int;
+    kernel_size_h:int;
+    stride_size_w:int;
+    stride_size_h:int;
+    pad_size_w:int;
+    pad_size_h:int;
     weight:[float];
     bias:[float];
     ibufaddr:ulong;

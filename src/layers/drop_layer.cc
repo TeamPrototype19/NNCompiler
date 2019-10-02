@@ -21,4 +21,9 @@ string DropoutLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
+flatbuffers::Offset<NNExecutor::Instruction> 
+DropoutLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
+    return true;
+}
+
 }   // namespace framework

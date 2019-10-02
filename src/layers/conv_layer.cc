@@ -124,6 +124,26 @@ string ConvLayer::getLayerInfoStr(void) {
     return msg;
 }
 
+flatbuffers::Offset<NNExecutor::Instruction> 
+ConvLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
+    /* Convolution OP code generation
+     */
+    unsigned long inaddr = 0;   // temp
+    unsigned long outaddr = 0;
+
+    auto name = builder.CreateString(_name);
+    auto weight = builder.CreateVector( _weight, _weight_size );
+    auto bias   = builder.CreateVector( _bias  , _bias_size   );
+    auto opinfo = NNExecutor::CreateConv(builder, name, _kernel_w, _kernel_h,
+            _stride_w, _stride_h, _pad_w, _pad_h, 
+            weight, bias, inaddr, outaddr );
+
+    /* Generate instruction
+     */
+    return CreateInstruction( builder, NNExecutor::OpCode_Convolution, 
+            NNExecutor::OpInfo_Conv, opinfo.Union() );
+}
+
 void ConvLayer::resizeWeight(int size) {
     if( _weight != nullptr )
         delete [] _weight;

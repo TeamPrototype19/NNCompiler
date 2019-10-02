@@ -33,6 +33,11 @@ string FullyConnectedLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
+flatbuffers::Offset<NNExecutor::Instruction> 
+FullyConnectedLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
+    return true;
+}
+
 void FullyConnectedLayer::resizeWeight(int size) {
     if( _weight != nullptr )
         delete [] _weight;

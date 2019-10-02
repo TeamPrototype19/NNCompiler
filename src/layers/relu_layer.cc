@@ -21,4 +21,9 @@ string ReluLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
+flatbuffers::Offset<NNExecutor::Instruction> 
+ReluLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
+    return true;
+}
+
 }   // namespace framework
