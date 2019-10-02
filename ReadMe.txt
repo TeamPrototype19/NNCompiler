@@ -24,7 +24,7 @@ Submodule 'flatbuffers' (https://github.com/google/flatbuffers.git) registered f
 #> cd build
 #> cmake ..
 #> make flatc
-#> cd ..
+#> cd ../../   (return to NNCompiler root directory)
 
 3. Compiler compile
 #> mkdir build
