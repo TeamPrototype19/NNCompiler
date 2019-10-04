@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "blob.hpp"
+#include "instPacket_generated.h"
 
 using namespace std;
 namespace framework {
@@ -109,6 +111,48 @@ string PoolLayer::getLayerInfoStr(void) {
 
 flatbuffers::Offset<NNExecutor::Instruction> 
 PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
+    /* Pool OP code generation
+     */
+
+    /* Input tile info setting
+     */
+    auto ibp = GetInBlobPtr(0);
+    unsigned long iaddr = ibp->get_mem_addr();
+    int its_n = ibp->get_dim()[N];
+    int its_c = ibp->get_dim()[C];
+    int its_h = ibp->get_dim()[H];
+    int its_w = ibp->get_dim()[W];
+    auto itinfo = NNExecutor::CreateTileInfo( builder, 
+            iaddr, its_n, its_c, its_h, its_w );
+
+    auto obp = GetOutBlobPtr(0);
+    unsigned long oaddr = obp->get_mem_addr();
+    int ots_n = obp->get_dim()[N];
+    int ots_c = obp->get_dim()[C];
+    int ots_h = obp->get_dim()[H];
+    int ots_w = obp->get_dim()[W];
+    auto otinfo = NNExecutor::CreateTileInfo( builder, 
+            oaddr, ots_n, ots_c, ots_h, ots_w );
+
+    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> itinfo_vector;
+    itinfo_vector.push_back( itinfo );
+    auto itiles = builder.CreateVector( itinfo_vector );
+
+    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> otinfo_vector;
+    otinfo_vector.push_back( otinfo );
+    auto otiles = builder.CreateVector( otinfo_vector );
+
+
+    /* Create Pooling table structure 
+     */
+    auto name = builder.CreateString(_name);
+    auto opinfo = NNExecutor::CreatePooling(builder, name, _kernel_w, _kernel_h,
+            _stride_w, _stride_h, _pad_w, _pad_h, itiles, otiles);
+
+    /* Generate instruction
+     */
+    return CreateInstruction( builder, NNExecutor::OpCode_Pooling, 
+            NNExecutor::OpInfo_Pooling, opinfo.Union() );
     return true;
 }
 

@@ -36,6 +36,7 @@ public:
     /* Functions for network compiling
      */
     void Compiling(void);
+    bool GenerateCompiledOutput(void);
 
 private:
     /* Input blob dimension

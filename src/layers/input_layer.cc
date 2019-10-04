@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "blob.hpp"
+#include "instPacket_generated.h"
 
 using namespace std;
 namespace framework {
@@ -30,7 +32,28 @@ string InputLayer::getLayerInfoStr(void) {
 
 flatbuffers::Offset<NNExecutor::Instruction> 
 InputLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
-    return true;
+    /* Input tile info setting
+     */
+    auto obp = GetOutBlobPtr(0);
+    unsigned long oaddr = obp->get_mem_addr();
+    int ots_n = obp->get_dim()[N];
+    int ots_c = obp->get_dim()[C];
+    int ots_h = obp->get_dim()[H];
+    int ots_w = obp->get_dim()[W];
+    auto otinfo = NNExecutor::CreateTileInfo( builder, 
+            oaddr, ots_n, ots_c, ots_h, ots_w );
+
+    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> otinfo_vector;
+    otinfo_vector.push_back( otinfo );
+    auto otiles = builder.CreateVector( otinfo_vector );
+
+    auto name = builder.CreateString(_name);
+    auto opinfo = NNExecutor::CreateInput(builder, name, otiles);
+
+    /* Generate instruction
+     */
+    return CreateInstruction( builder, NNExecutor::OpCode_Input, 
+            NNExecutor::OpInfo_Input, opinfo.Union() );
 }
 
 }   // namespace framework

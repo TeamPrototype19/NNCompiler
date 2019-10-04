@@ -14,6 +14,13 @@ namespace framework {
 
 class NNLayer;
 
+enum {
+    N = 0,
+    C = 1,
+    H = 2,
+    W = 3
+};
+
 class Blob : public Node {
 public:
     Blob(void);
@@ -29,12 +36,12 @@ public:
 
     void add_producer(shared_ptr<NNLayer> lp);
     void add_consumer(shared_ptr<NNLayer> lp);
-    void set_mem_addr(unsigned int addr);
-    unsigned int get_mem_addr(void);
+    void set_mem_addr(unsigned long addr);
+    unsigned long get_mem_addr(void);
 
 private:
     vector<int> _dim;
-    unsigned int _addr;
+    unsigned long _addr;
 };
 
 }

@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "blob.hpp"
+#include "instPacket_generated.h"
 #include <string>
 
 using namespace std;
@@ -128,15 +130,46 @@ flatbuffers::Offset<NNExecutor::Instruction>
 ConvLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Convolution OP code generation
      */
-    unsigned long inaddr = 0;   // temp
-    unsigned long outaddr = 0;
 
+    /* Input tile info setting
+     */
+    auto ibp = GetInBlobPtr(0);
+    unsigned long iaddr = ibp->get_mem_addr();
+    int its_n = ibp->get_dim()[N];
+    int its_c = ibp->get_dim()[C];
+    int its_h = ibp->get_dim()[H];
+    int its_w = ibp->get_dim()[W];
+    auto itinfo = NNExecutor::CreateTileInfo( builder, 
+            iaddr, its_n, its_c, its_h, its_w );
+
+    auto obp = GetOutBlobPtr(0);
+    unsigned long oaddr = obp->get_mem_addr();
+    int ots_n = obp->get_dim()[N];
+    int ots_c = obp->get_dim()[C];
+    int ots_h = obp->get_dim()[H];
+    int ots_w = obp->get_dim()[W];
+    auto otinfo = NNExecutor::CreateTileInfo( builder, 
+            oaddr, ots_n, ots_c, ots_h, ots_w );
+
+    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> itinfo_vector;
+    itinfo_vector.push_back( itinfo );
+    auto itiles = builder.CreateVector( itinfo_vector );
+
+    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> otinfo_vector;
+    otinfo_vector.push_back( otinfo );
+    auto otiles = builder.CreateVector( otinfo_vector );
+
+    /* Weight & Bias array setting 
+     */
     auto name = builder.CreateString(_name);
     auto weight = builder.CreateVector( _weight, _weight_size );
     auto bias   = builder.CreateVector( _bias  , _bias_size   );
+
+    /* Create Conv table structure 
+     */
     auto opinfo = NNExecutor::CreateConv(builder, name, _kernel_w, _kernel_h,
             _stride_w, _stride_h, _pad_w, _pad_h, 
-            weight, bias, inaddr, outaddr );
+            weight, bias, itiles, otiles );
 
     /* Generate instruction
      */

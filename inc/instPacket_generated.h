@@ -10,6 +10,10 @@ namespace NNExecutor {
 
 struct Instruction;
 
+struct TileInfo;
+
+struct Input;
+
 struct Conv;
 
 struct Relu;
@@ -24,17 +28,19 @@ struct InstPacket;
 
 /// Instruction OP code definitions
 enum OpCode {
-  OpCode_Convolution = 0,
-  OpCode_Relu = 1,
-  OpCode_Pooling = 2,
-  OpCode_FullyConnected = 3,
-  OpCode_Softmax = 4,
-  OpCode_MIN = OpCode_Convolution,
+  OpCode_Input = 0,
+  OpCode_Convolution = 1,
+  OpCode_Relu = 2,
+  OpCode_Pooling = 3,
+  OpCode_FullyConnected = 4,
+  OpCode_Softmax = 5,
+  OpCode_MIN = OpCode_Input,
   OpCode_MAX = OpCode_Softmax
 };
 
-inline const OpCode (&EnumValuesOpCode())[5] {
+inline const OpCode (&EnumValuesOpCode())[6] {
   static const OpCode values[] = {
+    OpCode_Input,
     OpCode_Convolution,
     OpCode_Relu,
     OpCode_Pooling,
@@ -46,6 +52,7 @@ inline const OpCode (&EnumValuesOpCode())[5] {
 
 inline const char * const *EnumNamesOpCode() {
   static const char * const names[] = {
+    "Input",
     "Convolution",
     "Relu",
     "Pooling",
@@ -57,25 +64,27 @@ inline const char * const *EnumNamesOpCode() {
 }
 
 inline const char *EnumNameOpCode(OpCode e) {
-  if (e < OpCode_Convolution || e > OpCode_Softmax) return "";
+  if (e < OpCode_Input || e > OpCode_Softmax) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesOpCode()[index];
 }
 
 enum OpInfo {
   OpInfo_NONE = 0,
-  OpInfo_Conv = 1,
-  OpInfo_Relu = 2,
-  OpInfo_Pooling = 3,
-  OpInfo_FC = 4,
-  OpInfo_Softmax = 5,
+  OpInfo_Input = 1,
+  OpInfo_Conv = 2,
+  OpInfo_Relu = 3,
+  OpInfo_Pooling = 4,
+  OpInfo_FC = 5,
+  OpInfo_Softmax = 6,
   OpInfo_MIN = OpInfo_NONE,
   OpInfo_MAX = OpInfo_Softmax
 };
 
-inline const OpInfo (&EnumValuesOpInfo())[6] {
+inline const OpInfo (&EnumValuesOpInfo())[7] {
   static const OpInfo values[] = {
     OpInfo_NONE,
+    OpInfo_Input,
     OpInfo_Conv,
     OpInfo_Relu,
     OpInfo_Pooling,
@@ -88,6 +97,7 @@ inline const OpInfo (&EnumValuesOpInfo())[6] {
 inline const char * const *EnumNamesOpInfo() {
   static const char * const names[] = {
     "NONE",
+    "Input",
     "Conv",
     "Relu",
     "Pooling",
@@ -106,6 +116,10 @@ inline const char *EnumNameOpInfo(OpInfo e) {
 
 template<typename T> struct OpInfoTraits {
   static const OpInfo enum_value = OpInfo_NONE;
+};
+
+template<> struct OpInfoTraits<Input> {
+  static const OpInfo enum_value = OpInfo_Input;
 };
 
 template<> struct OpInfoTraits<Conv> {
@@ -147,6 +161,9 @@ struct Instruction FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const void *>(VT_OPERAND);
   }
   template<typename T> const T *operand_as() const;
+  const Input *operand_as_Input() const {
+    return operand_type() == OpInfo_Input ? static_cast<const Input *>(operand()) : nullptr;
+  }
   const Conv *operand_as_Conv() const {
     return operand_type() == OpInfo_Conv ? static_cast<const Conv *>(operand()) : nullptr;
   }
@@ -171,6 +188,10 @@ struct Instruction FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.EndTable();
   }
 };
+
+template<> inline const Input *Instruction::operand_as<Input>() const {
+  return operand_as_Input();
+}
 
 template<> inline const Conv *Instruction::operand_as<Conv>() const {
   return operand_as_Conv();
@@ -218,7 +239,7 @@ struct InstructionBuilder {
 
 inline flatbuffers::Offset<Instruction> CreateInstruction(
     flatbuffers::FlatBufferBuilder &_fbb,
-    OpCode opcode = OpCode_Convolution,
+    OpCode opcode = OpCode_Input,
     OpInfo operand_type = OpInfo_NONE,
     flatbuffers::Offset<void> operand = 0) {
   InstructionBuilder builder_(_fbb);
@@ -228,7 +249,152 @@ inline flatbuffers::Offset<Instruction> CreateInstruction(
   return builder_.Finish();
 }
 
+struct TileInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ADDR = 4,
+    VT_TSIZE_N = 6,
+    VT_TSIZE_C = 8,
+    VT_TSIZE_H = 10,
+    VT_TSIZE_W = 12
+  };
+  uint64_t addr() const {
+    return GetField<uint64_t>(VT_ADDR, 0);
+  }
+  int32_t tsize_n() const {
+    return GetField<int32_t>(VT_TSIZE_N, 0);
+  }
+  int32_t tsize_c() const {
+    return GetField<int32_t>(VT_TSIZE_C, 0);
+  }
+  int32_t tsize_h() const {
+    return GetField<int32_t>(VT_TSIZE_H, 0);
+  }
+  int32_t tsize_w() const {
+    return GetField<int32_t>(VT_TSIZE_W, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint64_t>(verifier, VT_ADDR) &&
+           VerifyField<int32_t>(verifier, VT_TSIZE_N) &&
+           VerifyField<int32_t>(verifier, VT_TSIZE_C) &&
+           VerifyField<int32_t>(verifier, VT_TSIZE_H) &&
+           VerifyField<int32_t>(verifier, VT_TSIZE_W) &&
+           verifier.EndTable();
+  }
+};
+
+struct TileInfoBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_addr(uint64_t addr) {
+    fbb_.AddElement<uint64_t>(TileInfo::VT_ADDR, addr, 0);
+  }
+  void add_tsize_n(int32_t tsize_n) {
+    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_N, tsize_n, 0);
+  }
+  void add_tsize_c(int32_t tsize_c) {
+    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_C, tsize_c, 0);
+  }
+  void add_tsize_h(int32_t tsize_h) {
+    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_H, tsize_h, 0);
+  }
+  void add_tsize_w(int32_t tsize_w) {
+    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_W, tsize_w, 0);
+  }
+  explicit TileInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TileInfoBuilder &operator=(const TileInfoBuilder &);
+  flatbuffers::Offset<TileInfo> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<TileInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TileInfo> CreateTileInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t addr = 0,
+    int32_t tsize_n = 0,
+    int32_t tsize_c = 0,
+    int32_t tsize_h = 0,
+    int32_t tsize_w = 0) {
+  TileInfoBuilder builder_(_fbb);
+  builder_.add_addr(addr);
+  builder_.add_tsize_w(tsize_w);
+  builder_.add_tsize_h(tsize_h);
+  builder_.add_tsize_c(tsize_c);
+  builder_.add_tsize_n(tsize_n);
+  return builder_.Finish();
+}
+
 /// Operand info of each instruction (kernel)
+struct Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_KERNEL_NAME = 4,
+    VT_OTILE = 6
+  };
+  const flatbuffers::String *kernel_name() const {
+    return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *otile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_OTILE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_KERNEL_NAME) &&
+           verifier.VerifyString(kernel_name()) &&
+           VerifyOffset(verifier, VT_OTILE) &&
+           verifier.VerifyVector(otile()) &&
+           verifier.VerifyVectorOfTables(otile()) &&
+           verifier.EndTable();
+  }
+};
+
+struct InputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
+    fbb_.AddOffset(Input::VT_KERNEL_NAME, kernel_name);
+  }
+  void add_otile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile) {
+    fbb_.AddOffset(Input::VT_OTILE, otile);
+  }
+  explicit InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  InputBuilder &operator=(const InputBuilder &);
+  flatbuffers::Offset<Input> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Input>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Input> CreateInput(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile = 0) {
+  InputBuilder builder_(_fbb);
+  builder_.add_otile(otile);
+  builder_.add_kernel_name(kernel_name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Input> CreateInputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *kernel_name = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *otile = nullptr) {
+  auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  auto otile__ = otile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*otile) : 0;
+  return NNExecutor::CreateInput(
+      _fbb,
+      kernel_name__,
+      otile__);
+}
+
 struct Conv FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_KERNEL_NAME = 4,
@@ -240,8 +406,8 @@ struct Conv FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_PAD_SIZE_H = 16,
     VT_WEIGHT = 18,
     VT_BIAS = 20,
-    VT_IBUFADDR = 22,
-    VT_OBUFADDR = 24
+    VT_ITILE = 22,
+    VT_OTILE = 24
   };
   const flatbuffers::String *kernel_name() const {
     return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
@@ -270,11 +436,11 @@ struct Conv FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<float> *bias() const {
     return GetPointer<const flatbuffers::Vector<float> *>(VT_BIAS);
   }
-  uint64_t ibufaddr() const {
-    return GetField<uint64_t>(VT_IBUFADDR, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *itile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_ITILE);
   }
-  uint64_t obufaddr() const {
-    return GetField<uint64_t>(VT_OBUFADDR, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *otile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_OTILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -290,8 +456,12 @@ struct Conv FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(weight()) &&
            VerifyOffset(verifier, VT_BIAS) &&
            verifier.VerifyVector(bias()) &&
-           VerifyField<uint64_t>(verifier, VT_IBUFADDR) &&
-           VerifyField<uint64_t>(verifier, VT_OBUFADDR) &&
+           VerifyOffset(verifier, VT_ITILE) &&
+           verifier.VerifyVector(itile()) &&
+           verifier.VerifyVectorOfTables(itile()) &&
+           VerifyOffset(verifier, VT_OTILE) &&
+           verifier.VerifyVector(otile()) &&
+           verifier.VerifyVectorOfTables(otile()) &&
            verifier.EndTable();
   }
 };
@@ -326,11 +496,11 @@ struct ConvBuilder {
   void add_bias(flatbuffers::Offset<flatbuffers::Vector<float>> bias) {
     fbb_.AddOffset(Conv::VT_BIAS, bias);
   }
-  void add_ibufaddr(uint64_t ibufaddr) {
-    fbb_.AddElement<uint64_t>(Conv::VT_IBUFADDR, ibufaddr, 0);
+  void add_itile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile) {
+    fbb_.AddOffset(Conv::VT_ITILE, itile);
   }
-  void add_obufaddr(uint64_t obufaddr) {
-    fbb_.AddElement<uint64_t>(Conv::VT_OBUFADDR, obufaddr, 0);
+  void add_otile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile) {
+    fbb_.AddOffset(Conv::VT_OTILE, otile);
   }
   explicit ConvBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -355,11 +525,11 @@ inline flatbuffers::Offset<Conv> CreateConv(
     int32_t pad_size_h = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> weight = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> bias = 0,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile = 0) {
   ConvBuilder builder_(_fbb);
-  builder_.add_obufaddr(obufaddr);
-  builder_.add_ibufaddr(ibufaddr);
+  builder_.add_otile(otile);
+  builder_.add_itile(itile);
   builder_.add_bias(bias);
   builder_.add_weight(weight);
   builder_.add_pad_size_h(pad_size_h);
@@ -383,11 +553,13 @@ inline flatbuffers::Offset<Conv> CreateConvDirect(
     int32_t pad_size_h = 0,
     const std::vector<float> *weight = nullptr,
     const std::vector<float> *bias = nullptr,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    const std::vector<flatbuffers::Offset<TileInfo>> *itile = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *otile = nullptr) {
   auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
   auto weight__ = weight ? _fbb.CreateVector<float>(*weight) : 0;
   auto bias__ = bias ? _fbb.CreateVector<float>(*bias) : 0;
+  auto itile__ = itile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*itile) : 0;
+  auto otile__ = otile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*otile) : 0;
   return NNExecutor::CreateConv(
       _fbb,
       kernel_name__,
@@ -399,31 +571,35 @@ inline flatbuffers::Offset<Conv> CreateConvDirect(
       pad_size_h,
       weight__,
       bias__,
-      ibufaddr,
-      obufaddr);
+      itile__,
+      otile__);
 }
 
 struct Relu FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_KERNEL_NAME = 4,
-    VT_IBUFADDR = 6,
-    VT_OBUFADDR = 8
+    VT_ITILE = 6,
+    VT_OTILE = 8
   };
   const flatbuffers::String *kernel_name() const {
     return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
   }
-  uint64_t ibufaddr() const {
-    return GetField<uint64_t>(VT_IBUFADDR, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *itile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_ITILE);
   }
-  uint64_t obufaddr() const {
-    return GetField<uint64_t>(VT_OBUFADDR, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *otile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_OTILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_KERNEL_NAME) &&
            verifier.VerifyString(kernel_name()) &&
-           VerifyField<uint64_t>(verifier, VT_IBUFADDR) &&
-           VerifyField<uint64_t>(verifier, VT_OBUFADDR) &&
+           VerifyOffset(verifier, VT_ITILE) &&
+           verifier.VerifyVector(itile()) &&
+           verifier.VerifyVectorOfTables(itile()) &&
+           VerifyOffset(verifier, VT_OTILE) &&
+           verifier.VerifyVector(otile()) &&
+           verifier.VerifyVectorOfTables(otile()) &&
            verifier.EndTable();
   }
 };
@@ -434,11 +610,11 @@ struct ReluBuilder {
   void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
     fbb_.AddOffset(Relu::VT_KERNEL_NAME, kernel_name);
   }
-  void add_ibufaddr(uint64_t ibufaddr) {
-    fbb_.AddElement<uint64_t>(Relu::VT_IBUFADDR, ibufaddr, 0);
+  void add_itile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile) {
+    fbb_.AddOffset(Relu::VT_ITILE, itile);
   }
-  void add_obufaddr(uint64_t obufaddr) {
-    fbb_.AddElement<uint64_t>(Relu::VT_OBUFADDR, obufaddr, 0);
+  void add_otile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile) {
+    fbb_.AddOffset(Relu::VT_OTILE, otile);
   }
   explicit ReluBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -455,11 +631,11 @@ struct ReluBuilder {
 inline flatbuffers::Offset<Relu> CreateRelu(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile = 0) {
   ReluBuilder builder_(_fbb);
-  builder_.add_obufaddr(obufaddr);
-  builder_.add_ibufaddr(ibufaddr);
+  builder_.add_otile(otile);
+  builder_.add_itile(itile);
   builder_.add_kernel_name(kernel_name);
   return builder_.Finish();
 }
@@ -467,52 +643,73 @@ inline flatbuffers::Offset<Relu> CreateRelu(
 inline flatbuffers::Offset<Relu> CreateReluDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *kernel_name = nullptr,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    const std::vector<flatbuffers::Offset<TileInfo>> *itile = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *otile = nullptr) {
   auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  auto itile__ = itile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*itile) : 0;
+  auto otile__ = otile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*otile) : 0;
   return NNExecutor::CreateRelu(
       _fbb,
       kernel_name__,
-      ibufaddr,
-      obufaddr);
+      itile__,
+      otile__);
 }
 
 struct Pooling FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_KERNEL_NAME = 4,
-    VT_KERNEL_SIZE = 6,
-    VT_STRIDE_SIZE = 8,
-    VT_PAD_SIZE = 10,
-    VT_IBUFADDR = 12,
-    VT_OBUFADDR = 14
+    VT_KERNEL_SIZE_W = 6,
+    VT_KERNEL_SIZE_H = 8,
+    VT_STRIDE_SIZE_W = 10,
+    VT_STRIDE_SIZE_H = 12,
+    VT_PAD_SIZE_W = 14,
+    VT_PAD_SIZE_H = 16,
+    VT_ITILE = 18,
+    VT_OTILE = 20
   };
   const flatbuffers::String *kernel_name() const {
     return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
   }
-  int32_t kernel_size() const {
-    return GetField<int32_t>(VT_KERNEL_SIZE, 0);
+  int32_t kernel_size_w() const {
+    return GetField<int32_t>(VT_KERNEL_SIZE_W, 0);
   }
-  int32_t stride_size() const {
-    return GetField<int32_t>(VT_STRIDE_SIZE, 0);
+  int32_t kernel_size_h() const {
+    return GetField<int32_t>(VT_KERNEL_SIZE_H, 0);
   }
-  int32_t pad_size() const {
-    return GetField<int32_t>(VT_PAD_SIZE, 0);
+  int32_t stride_size_w() const {
+    return GetField<int32_t>(VT_STRIDE_SIZE_W, 0);
   }
-  uint64_t ibufaddr() const {
-    return GetField<uint64_t>(VT_IBUFADDR, 0);
+  int32_t stride_size_h() const {
+    return GetField<int32_t>(VT_STRIDE_SIZE_H, 0);
   }
-  uint64_t obufaddr() const {
-    return GetField<uint64_t>(VT_OBUFADDR, 0);
+  int32_t pad_size_w() const {
+    return GetField<int32_t>(VT_PAD_SIZE_W, 0);
+  }
+  int32_t pad_size_h() const {
+    return GetField<int32_t>(VT_PAD_SIZE_H, 0);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *itile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_ITILE);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *otile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_OTILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_KERNEL_NAME) &&
            verifier.VerifyString(kernel_name()) &&
-           VerifyField<int32_t>(verifier, VT_KERNEL_SIZE) &&
-           VerifyField<int32_t>(verifier, VT_STRIDE_SIZE) &&
-           VerifyField<int32_t>(verifier, VT_PAD_SIZE) &&
-           VerifyField<uint64_t>(verifier, VT_IBUFADDR) &&
-           VerifyField<uint64_t>(verifier, VT_OBUFADDR) &&
+           VerifyField<int32_t>(verifier, VT_KERNEL_SIZE_W) &&
+           VerifyField<int32_t>(verifier, VT_KERNEL_SIZE_H) &&
+           VerifyField<int32_t>(verifier, VT_STRIDE_SIZE_W) &&
+           VerifyField<int32_t>(verifier, VT_STRIDE_SIZE_H) &&
+           VerifyField<int32_t>(verifier, VT_PAD_SIZE_W) &&
+           VerifyField<int32_t>(verifier, VT_PAD_SIZE_H) &&
+           VerifyOffset(verifier, VT_ITILE) &&
+           verifier.VerifyVector(itile()) &&
+           verifier.VerifyVectorOfTables(itile()) &&
+           VerifyOffset(verifier, VT_OTILE) &&
+           verifier.VerifyVector(otile()) &&
+           verifier.VerifyVectorOfTables(otile()) &&
            verifier.EndTable();
   }
 };
@@ -523,20 +720,29 @@ struct PoolingBuilder {
   void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
     fbb_.AddOffset(Pooling::VT_KERNEL_NAME, kernel_name);
   }
-  void add_kernel_size(int32_t kernel_size) {
-    fbb_.AddElement<int32_t>(Pooling::VT_KERNEL_SIZE, kernel_size, 0);
+  void add_kernel_size_w(int32_t kernel_size_w) {
+    fbb_.AddElement<int32_t>(Pooling::VT_KERNEL_SIZE_W, kernel_size_w, 0);
   }
-  void add_stride_size(int32_t stride_size) {
-    fbb_.AddElement<int32_t>(Pooling::VT_STRIDE_SIZE, stride_size, 0);
+  void add_kernel_size_h(int32_t kernel_size_h) {
+    fbb_.AddElement<int32_t>(Pooling::VT_KERNEL_SIZE_H, kernel_size_h, 0);
   }
-  void add_pad_size(int32_t pad_size) {
-    fbb_.AddElement<int32_t>(Pooling::VT_PAD_SIZE, pad_size, 0);
+  void add_stride_size_w(int32_t stride_size_w) {
+    fbb_.AddElement<int32_t>(Pooling::VT_STRIDE_SIZE_W, stride_size_w, 0);
   }
-  void add_ibufaddr(uint64_t ibufaddr) {
-    fbb_.AddElement<uint64_t>(Pooling::VT_IBUFADDR, ibufaddr, 0);
+  void add_stride_size_h(int32_t stride_size_h) {
+    fbb_.AddElement<int32_t>(Pooling::VT_STRIDE_SIZE_H, stride_size_h, 0);
   }
-  void add_obufaddr(uint64_t obufaddr) {
-    fbb_.AddElement<uint64_t>(Pooling::VT_OBUFADDR, obufaddr, 0);
+  void add_pad_size_w(int32_t pad_size_w) {
+    fbb_.AddElement<int32_t>(Pooling::VT_PAD_SIZE_W, pad_size_w, 0);
+  }
+  void add_pad_size_h(int32_t pad_size_h) {
+    fbb_.AddElement<int32_t>(Pooling::VT_PAD_SIZE_H, pad_size_h, 0);
+  }
+  void add_itile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile) {
+    fbb_.AddOffset(Pooling::VT_ITILE, itile);
+  }
+  void add_otile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile) {
+    fbb_.AddOffset(Pooling::VT_OTILE, otile);
   }
   explicit PoolingBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -553,17 +759,23 @@ struct PoolingBuilder {
 inline flatbuffers::Offset<Pooling> CreatePooling(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
-    int32_t kernel_size = 0,
-    int32_t stride_size = 0,
-    int32_t pad_size = 0,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    int32_t kernel_size_w = 0,
+    int32_t kernel_size_h = 0,
+    int32_t stride_size_w = 0,
+    int32_t stride_size_h = 0,
+    int32_t pad_size_w = 0,
+    int32_t pad_size_h = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile = 0) {
   PoolingBuilder builder_(_fbb);
-  builder_.add_obufaddr(obufaddr);
-  builder_.add_ibufaddr(ibufaddr);
-  builder_.add_pad_size(pad_size);
-  builder_.add_stride_size(stride_size);
-  builder_.add_kernel_size(kernel_size);
+  builder_.add_otile(otile);
+  builder_.add_itile(itile);
+  builder_.add_pad_size_h(pad_size_h);
+  builder_.add_pad_size_w(pad_size_w);
+  builder_.add_stride_size_h(stride_size_h);
+  builder_.add_stride_size_w(stride_size_w);
+  builder_.add_kernel_size_h(kernel_size_h);
+  builder_.add_kernel_size_w(kernel_size_w);
   builder_.add_kernel_name(kernel_name);
   return builder_.Finish();
 }
@@ -571,20 +783,28 @@ inline flatbuffers::Offset<Pooling> CreatePooling(
 inline flatbuffers::Offset<Pooling> CreatePoolingDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *kernel_name = nullptr,
-    int32_t kernel_size = 0,
-    int32_t stride_size = 0,
-    int32_t pad_size = 0,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    int32_t kernel_size_w = 0,
+    int32_t kernel_size_h = 0,
+    int32_t stride_size_w = 0,
+    int32_t stride_size_h = 0,
+    int32_t pad_size_w = 0,
+    int32_t pad_size_h = 0,
+    const std::vector<flatbuffers::Offset<TileInfo>> *itile = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *otile = nullptr) {
   auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  auto itile__ = itile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*itile) : 0;
+  auto otile__ = otile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*otile) : 0;
   return NNExecutor::CreatePooling(
       _fbb,
       kernel_name__,
-      kernel_size,
-      stride_size,
-      pad_size,
-      ibufaddr,
-      obufaddr);
+      kernel_size_w,
+      kernel_size_h,
+      stride_size_w,
+      stride_size_h,
+      pad_size_w,
+      pad_size_h,
+      itile__,
+      otile__);
 }
 
 struct FC FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -592,8 +812,8 @@ struct FC FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_KERNEL_NAME = 4,
     VT_WEIGHT = 6,
     VT_BIAS = 8,
-    VT_IBUFADDR = 10,
-    VT_OBUFADDR = 12
+    VT_ITILE = 10,
+    VT_OTILE = 12
   };
   const flatbuffers::String *kernel_name() const {
     return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
@@ -604,11 +824,11 @@ struct FC FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<float> *bias() const {
     return GetPointer<const flatbuffers::Vector<float> *>(VT_BIAS);
   }
-  uint64_t ibufaddr() const {
-    return GetField<uint64_t>(VT_IBUFADDR, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *itile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_ITILE);
   }
-  uint64_t obufaddr() const {
-    return GetField<uint64_t>(VT_OBUFADDR, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *otile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_OTILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -618,8 +838,12 @@ struct FC FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(weight()) &&
            VerifyOffset(verifier, VT_BIAS) &&
            verifier.VerifyVector(bias()) &&
-           VerifyField<uint64_t>(verifier, VT_IBUFADDR) &&
-           VerifyField<uint64_t>(verifier, VT_OBUFADDR) &&
+           VerifyOffset(verifier, VT_ITILE) &&
+           verifier.VerifyVector(itile()) &&
+           verifier.VerifyVectorOfTables(itile()) &&
+           VerifyOffset(verifier, VT_OTILE) &&
+           verifier.VerifyVector(otile()) &&
+           verifier.VerifyVectorOfTables(otile()) &&
            verifier.EndTable();
   }
 };
@@ -636,11 +860,11 @@ struct FCBuilder {
   void add_bias(flatbuffers::Offset<flatbuffers::Vector<float>> bias) {
     fbb_.AddOffset(FC::VT_BIAS, bias);
   }
-  void add_ibufaddr(uint64_t ibufaddr) {
-    fbb_.AddElement<uint64_t>(FC::VT_IBUFADDR, ibufaddr, 0);
+  void add_itile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile) {
+    fbb_.AddOffset(FC::VT_ITILE, itile);
   }
-  void add_obufaddr(uint64_t obufaddr) {
-    fbb_.AddElement<uint64_t>(FC::VT_OBUFADDR, obufaddr, 0);
+  void add_otile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile) {
+    fbb_.AddOffset(FC::VT_OTILE, otile);
   }
   explicit FCBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -659,11 +883,11 @@ inline flatbuffers::Offset<FC> CreateFC(
     flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> weight = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> bias = 0,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile = 0) {
   FCBuilder builder_(_fbb);
-  builder_.add_obufaddr(obufaddr);
-  builder_.add_ibufaddr(ibufaddr);
+  builder_.add_otile(otile);
+  builder_.add_itile(itile);
   builder_.add_bias(bias);
   builder_.add_weight(weight);
   builder_.add_kernel_name(kernel_name);
@@ -675,46 +899,47 @@ inline flatbuffers::Offset<FC> CreateFCDirect(
     const char *kernel_name = nullptr,
     const std::vector<float> *weight = nullptr,
     const std::vector<float> *bias = nullptr,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    const std::vector<flatbuffers::Offset<TileInfo>> *itile = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *otile = nullptr) {
   auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
   auto weight__ = weight ? _fbb.CreateVector<float>(*weight) : 0;
   auto bias__ = bias ? _fbb.CreateVector<float>(*bias) : 0;
+  auto itile__ = itile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*itile) : 0;
+  auto otile__ = otile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*otile) : 0;
   return NNExecutor::CreateFC(
       _fbb,
       kernel_name__,
       weight__,
       bias__,
-      ibufaddr,
-      obufaddr);
+      itile__,
+      otile__);
 }
 
 struct Softmax FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_KERNEL_NAME = 4,
-    VT_OP_UNIT_SIZE = 6,
-    VT_IBUFADDR = 8,
-    VT_OBUFADDR = 10
+    VT_ITILE = 6,
+    VT_OTILE = 8
   };
   const flatbuffers::String *kernel_name() const {
     return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
   }
-  int32_t op_unit_size() const {
-    return GetField<int32_t>(VT_OP_UNIT_SIZE, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *itile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_ITILE);
   }
-  uint64_t ibufaddr() const {
-    return GetField<uint64_t>(VT_IBUFADDR, 0);
-  }
-  uint64_t obufaddr() const {
-    return GetField<uint64_t>(VT_OBUFADDR, 0);
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *otile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_OTILE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_KERNEL_NAME) &&
            verifier.VerifyString(kernel_name()) &&
-           VerifyField<int32_t>(verifier, VT_OP_UNIT_SIZE) &&
-           VerifyField<uint64_t>(verifier, VT_IBUFADDR) &&
-           VerifyField<uint64_t>(verifier, VT_OBUFADDR) &&
+           VerifyOffset(verifier, VT_ITILE) &&
+           verifier.VerifyVector(itile()) &&
+           verifier.VerifyVectorOfTables(itile()) &&
+           VerifyOffset(verifier, VT_OTILE) &&
+           verifier.VerifyVector(otile()) &&
+           verifier.VerifyVectorOfTables(otile()) &&
            verifier.EndTable();
   }
 };
@@ -725,14 +950,11 @@ struct SoftmaxBuilder {
   void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
     fbb_.AddOffset(Softmax::VT_KERNEL_NAME, kernel_name);
   }
-  void add_op_unit_size(int32_t op_unit_size) {
-    fbb_.AddElement<int32_t>(Softmax::VT_OP_UNIT_SIZE, op_unit_size, 0);
+  void add_itile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile) {
+    fbb_.AddOffset(Softmax::VT_ITILE, itile);
   }
-  void add_ibufaddr(uint64_t ibufaddr) {
-    fbb_.AddElement<uint64_t>(Softmax::VT_IBUFADDR, ibufaddr, 0);
-  }
-  void add_obufaddr(uint64_t obufaddr) {
-    fbb_.AddElement<uint64_t>(Softmax::VT_OBUFADDR, obufaddr, 0);
+  void add_otile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile) {
+    fbb_.AddOffset(Softmax::VT_OTILE, otile);
   }
   explicit SoftmaxBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -749,13 +971,11 @@ struct SoftmaxBuilder {
 inline flatbuffers::Offset<Softmax> CreateSoftmax(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
-    int32_t op_unit_size = 0,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile = 0) {
   SoftmaxBuilder builder_(_fbb);
-  builder_.add_obufaddr(obufaddr);
-  builder_.add_ibufaddr(ibufaddr);
-  builder_.add_op_unit_size(op_unit_size);
+  builder_.add_otile(otile);
+  builder_.add_itile(itile);
   builder_.add_kernel_name(kernel_name);
   return builder_.Finish();
 }
@@ -763,16 +983,16 @@ inline flatbuffers::Offset<Softmax> CreateSoftmax(
 inline flatbuffers::Offset<Softmax> CreateSoftmaxDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *kernel_name = nullptr,
-    int32_t op_unit_size = 0,
-    uint64_t ibufaddr = 0,
-    uint64_t obufaddr = 0) {
+    const std::vector<flatbuffers::Offset<TileInfo>> *itile = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *otile = nullptr) {
   auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  auto itile__ = itile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*itile) : 0;
+  auto otile__ = otile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*otile) : 0;
   return NNExecutor::CreateSoftmax(
       _fbb,
       kernel_name__,
-      op_unit_size,
-      ibufaddr,
-      obufaddr);
+      itile__,
+      otile__);
 }
 
 /// root table definition
@@ -831,6 +1051,10 @@ inline bool VerifyOpInfo(flatbuffers::Verifier &verifier, const void *obj, OpInf
   switch (type) {
     case OpInfo_NONE: {
       return true;
+    }
+    case OpInfo_Input: {
+      auto ptr = reinterpret_cast<const Input *>(obj);
+      return verifier.VerifyTable(ptr);
     }
     case OpInfo_Conv: {
       auto ptr = reinterpret_cast<const Conv *>(obj);

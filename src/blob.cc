@@ -43,11 +43,11 @@ void Blob::add_consumer(shared_ptr<NNLayer> lp) {
     add_successor( static_pointer_cast<Node>(lp) );
 }
 
-void Blob::set_mem_addr(unsigned int addr) {
+void Blob::set_mem_addr(unsigned long addr) {
     _addr = addr;
 }
 
-unsigned int Blob::get_mem_addr(void) {
+unsigned long Blob::get_mem_addr(void) {
     return _addr;
 }
 

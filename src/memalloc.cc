@@ -64,7 +64,7 @@ bool MemoryAlloc::MemoryAllocAlgo_v1( vector<shared_ptr<NNLayer>> &sched_layer )
      * + No memory use optimization
      * + Linearly allocates all output buffers of all layers
      */
-    int free_address = 0;
+    unsigned long free_address = 0;
 
     for(auto layer : sched_layer) {
         /* Allocates memory block for Output blob
@@ -73,7 +73,7 @@ bool MemoryAlloc::MemoryAllocAlgo_v1( vector<shared_ptr<NNLayer>> &sched_layer )
             auto bp = layer->GetOutBlobPtr(i);
 
             bp->set_mem_addr( free_address );
-            free_address += _mblocks[ bp ].size_in_byte;
+            free_address += (unsigned long) _mblocks[ bp ].size_in_byte;
         }
     }
 

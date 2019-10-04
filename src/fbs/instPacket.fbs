@@ -3,6 +3,7 @@ namespace NNExecutor;
 
 /// Instruction OP code definitions
 enum OpCode : ubyte {
+    Input,
     Convolution,
     Relu,
     Pooling,
@@ -12,6 +13,7 @@ enum OpCode : ubyte {
 
 
 union OpInfo {
+    Input,
     Conv,
     Relu,
     Pooling,
@@ -26,7 +28,21 @@ table Instruction {
 }
 
 
+table TileInfo {
+    addr:ulong;
+    tsize_n:int;
+    tsize_c:int;
+    tsize_h:int;
+    tsize_w:int;
+}
+
+
 /// Operand info of each instruction (kernel)
+table Input {
+    kernel_name: string;     // only for DEBUG
+    otile:[TileInfo];
+}
+
 table Conv {
     kernel_name:string;     // only for DEBUG
     kernel_size_w:int;
@@ -37,38 +53,40 @@ table Conv {
     pad_size_h:int;
     weight:[float];
     bias:[float];
-    ibufaddr:ulong;
-    obufaddr:ulong;
+    itile:[TileInfo];
+    otile:[TileInfo];
 }
 
 table Relu {
     kernel_name: string;     // only for DEBUG
-    ibufaddr:ulong;
-    obufaddr:ulong;
+    itile:[TileInfo];
+    otile:[TileInfo];
 }
 
 table Pooling {
     kernel_name:string;     // only for DEBUG
-    kernel_size:int;
-    stride_size:int;
-    pad_size:int;
-    ibufaddr:ulong;
-    obufaddr:ulong;
+    kernel_size_w:int;
+    kernel_size_h:int;
+    stride_size_w:int;
+    stride_size_h:int;
+    pad_size_w:int;
+    pad_size_h:int;
+    itile:[TileInfo];
+    otile:[TileInfo];
 }
 
 table FC {
     kernel_name:string;     // only for DEBUG
     weight:[float];
     bias:[float];
-    ibufaddr:ulong;
-    obufaddr:ulong;
+    itile:[TileInfo];
+    otile:[TileInfo];
 }
 
 table Softmax {
     kernel_name:string;     // only for DEBUG
-    op_unit_size:int;
-    ibufaddr:ulong;
-    obufaddr:ulong;
+    itile:[TileInfo];
+    otile:[TileInfo];
 }
  
 

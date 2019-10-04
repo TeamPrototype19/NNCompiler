@@ -7,6 +7,7 @@
 #include "blob.hpp"
 #include "network.hpp"
 #include "memalloc.hpp"
+#include "instPacket_generated.h"
 
 using namespace std;
 
@@ -299,8 +300,6 @@ vector<shared_ptr<NNLayer>> Network::ScheduleLayers(void) {
     return nnlayer_list;
 }
 
-
-
 void Network::WriteNetworkToDotFile(string filename) {
     ofstream file;
     file.open( filename.c_str(), ios::out );
@@ -362,7 +361,41 @@ void Network::Compiling(void) {
         return;
     }
 
+    /* PHASE 2: Generate compiled output (temp)
+     */
+    success = GenerateCompiledOutput();
+    if( success == false ) {
+        std::cerr << "[ERROR] compiling phase: generate compiled output." << std::endl;
+        return;
+    }
+
     return;
+}
+
+bool Network::GenerateCompiledOutput(void) {
+    flatbuffers::FlatBufferBuilder builder(128);
+
+    std::vector<flatbuffers::Offset<NNExecutor::Instruction>> insts;
+
+    for(auto layer : _sched_layers) {
+        insts.push_back( layer->GenerateCompiledOutput(builder) );
+    }
+
+    auto inst_vector = builder.CreateVector( insts );
+    auto cgo = NNExecutor::CreateInstPacket( builder, inst_vector );
+    builder.Finish( cgo );
+
+    /* Write binary data file
+     */
+    uint8_t *buf_p = builder.GetBufferPointer();
+    int buf_size = builder.GetSize();
+
+    std::ofstream ofbfile;
+    ofbfile.open( "nnc.cgo", std::ios::out | std::ios::binary );
+    ofbfile.write( (char*) buf_p, buf_size );
+    ofbfile.close();
+
+    return true;
 }
 
 }   // namespace framework
