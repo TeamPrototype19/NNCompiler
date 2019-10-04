@@ -47,7 +47,7 @@ public:
 
     virtual void ComputeOutputSize(void) = 0;
     virtual string getLayerInfoStr(void) = 0;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) = 0;
 
     map<NNLayerType, string> ltype2str = {
@@ -80,7 +80,7 @@ public:
     ~ConvLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
     void resizeWeight(int size);
@@ -109,7 +109,7 @@ public:
     ~InputLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
@@ -125,7 +125,7 @@ public:
     ~ReluLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
@@ -140,7 +140,7 @@ public:
     ~BatchNormLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
@@ -155,7 +155,7 @@ public:
     ~ScaleLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
@@ -170,7 +170,7 @@ public:
     ~DropoutLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
@@ -190,7 +190,7 @@ public:
     ~PoolLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
@@ -210,7 +210,7 @@ public:
     ~ConcatLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
@@ -225,7 +225,7 @@ public:
     ~FullyConnectedLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
     void resizeWeight(int size);
@@ -250,7 +250,7 @@ public:
     ~SoftmaxLayer(void);
     virtual void ComputeOutputSize(void) override;
     virtual string getLayerInfoStr(void) override;
-    virtual flatbuffers::Offset<NNExecutor::Instruction> 
+    virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:

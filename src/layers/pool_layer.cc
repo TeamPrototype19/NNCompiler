@@ -109,7 +109,7 @@ string PoolLayer::getLayerInfoStr(void) {
     return msg;
 }
 
-flatbuffers::Offset<NNExecutor::Instruction> 
+flatbuffers::Offset<NNFramework::Instruction> 
 PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Pool OP code generation
      */
@@ -122,7 +122,7 @@ PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     int its_c = ibp->get_dim()[C];
     int its_h = ibp->get_dim()[H];
     int its_w = ibp->get_dim()[W];
-    auto itinfo = NNExecutor::CreateTileInfo( builder, 
+    auto itinfo = NNFramework::CreateTileInfo( builder, 
             iaddr, its_n, its_c, its_h, its_w );
 
     auto obp = GetOutBlobPtr(0);
@@ -131,14 +131,14 @@ PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     int ots_c = obp->get_dim()[C];
     int ots_h = obp->get_dim()[H];
     int ots_w = obp->get_dim()[W];
-    auto otinfo = NNExecutor::CreateTileInfo( builder, 
+    auto otinfo = NNFramework::CreateTileInfo( builder, 
             oaddr, ots_n, ots_c, ots_h, ots_w );
 
-    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> itinfo_vector;
+    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> itinfo_vector;
     itinfo_vector.push_back( itinfo );
     auto itiles = builder.CreateVector( itinfo_vector );
 
-    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> otinfo_vector;
+    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> otinfo_vector;
     otinfo_vector.push_back( otinfo );
     auto otiles = builder.CreateVector( otinfo_vector );
 
@@ -146,13 +146,13 @@ PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Create Pooling table structure 
      */
     auto name = builder.CreateString(_name);
-    auto opinfo = NNExecutor::CreatePooling(builder, name, _kernel_w, _kernel_h,
+    auto opinfo = NNFramework::CreatePooling(builder, name, _kernel_w, _kernel_h,
             _stride_w, _stride_h, _pad_w, _pad_h, itiles, otiles);
 
     /* Generate instruction
      */
-    return CreateInstruction( builder, NNExecutor::OpCode_Pooling, 
-            NNExecutor::OpInfo_Pooling, opinfo.Union() );
+    return CreateInstruction( builder, NNFramework::OpCode_Pooling, 
+            NNFramework::OpInfo_Pooling, opinfo.Union() );
     return true;
 }
 

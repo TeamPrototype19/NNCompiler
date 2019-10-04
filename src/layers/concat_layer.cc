@@ -23,7 +23,7 @@ string ConcatLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
-flatbuffers::Offset<NNExecutor::Instruction> 
+flatbuffers::Offset<NNFramework::Instruction> 
 ConcatLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     return true;
 }

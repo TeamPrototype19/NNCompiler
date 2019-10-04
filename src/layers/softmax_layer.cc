@@ -23,7 +23,7 @@ string SoftmaxLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
-flatbuffers::Offset<NNExecutor::Instruction> 
+flatbuffers::Offset<NNFramework::Instruction> 
 SoftmaxLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Softmax OP code generation
      */
@@ -36,7 +36,7 @@ SoftmaxLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     int its_c = ibp->get_dim()[C];
     int its_h = ibp->get_dim()[H];
     int its_w = ibp->get_dim()[W];
-    auto itinfo = NNExecutor::CreateTileInfo( builder, 
+    auto itinfo = NNFramework::CreateTileInfo( builder, 
             iaddr, its_n, its_c, its_h, its_w );
 
     auto obp = GetOutBlobPtr(0);
@@ -45,24 +45,24 @@ SoftmaxLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     int ots_c = obp->get_dim()[C];
     int ots_h = obp->get_dim()[H];
     int ots_w = obp->get_dim()[W];
-    auto otinfo = NNExecutor::CreateTileInfo( builder, 
+    auto otinfo = NNFramework::CreateTileInfo( builder, 
             oaddr, ots_n, ots_c, ots_h, ots_w );
 
-    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> itinfo_vector;
+    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> itinfo_vector;
     itinfo_vector.push_back( itinfo );
     auto itiles = builder.CreateVector( itinfo_vector );
 
-    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> otinfo_vector;
+    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> otinfo_vector;
     otinfo_vector.push_back( otinfo );
     auto otiles = builder.CreateVector( otinfo_vector );
 
     auto name = builder.CreateString(_name);
-    auto opinfo = NNExecutor::CreateSoftmax(builder, name, itiles, otiles);
+    auto opinfo = NNFramework::CreateSoftmax(builder, name, itiles, otiles);
 
     /* Generate instruction
      */
-    return CreateInstruction( builder, NNExecutor::OpCode_Convolution, 
-            NNExecutor::OpInfo_Conv, opinfo.Union() );
+    return CreateInstruction( builder, NNFramework::OpCode_Convolution, 
+            NNFramework::OpInfo_Conv, opinfo.Union() );
 
     return true;
 }

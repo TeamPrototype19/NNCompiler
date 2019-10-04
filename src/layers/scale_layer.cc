@@ -21,7 +21,7 @@ string ScaleLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
-flatbuffers::Offset<NNExecutor::Instruction> 
+flatbuffers::Offset<NNFramework::Instruction> 
 ScaleLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     return true;
 }

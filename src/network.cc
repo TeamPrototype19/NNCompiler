@@ -375,14 +375,14 @@ void Network::Compiling(void) {
 bool Network::GenerateCompiledOutput(void) {
     flatbuffers::FlatBufferBuilder builder(128);
 
-    std::vector<flatbuffers::Offset<NNExecutor::Instruction>> insts;
+    std::vector<flatbuffers::Offset<NNFramework::Instruction>> insts;
 
     for(auto layer : _sched_layers) {
         insts.push_back( layer->GenerateCompiledOutput(builder) );
     }
 
     auto inst_vector = builder.CreateVector( insts );
-    auto cgo = NNExecutor::CreateInstPacket( builder, inst_vector );
+    auto cgo = NNFramework::CreateInstPacket( builder, inst_vector );
     builder.Finish( cgo );
 
     /* Write binary data file

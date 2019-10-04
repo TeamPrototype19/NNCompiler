@@ -1,5 +1,5 @@
 
-namespace NNExecutor;
+namespace NNFramework;
 
 /// Instruction OP code definitions
 enum OpCode : ubyte {

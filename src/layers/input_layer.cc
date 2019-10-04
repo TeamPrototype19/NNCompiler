@@ -30,7 +30,7 @@ string InputLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
-flatbuffers::Offset<NNExecutor::Instruction> 
+flatbuffers::Offset<NNFramework::Instruction> 
 InputLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Input tile info setting
      */
@@ -40,20 +40,20 @@ InputLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     int ots_c = obp->get_dim()[C];
     int ots_h = obp->get_dim()[H];
     int ots_w = obp->get_dim()[W];
-    auto otinfo = NNExecutor::CreateTileInfo( builder, 
+    auto otinfo = NNFramework::CreateTileInfo( builder, 
             oaddr, ots_n, ots_c, ots_h, ots_w );
 
-    std::vector<flatbuffers::Offset<NNExecutor::TileInfo>> otinfo_vector;
+    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> otinfo_vector;
     otinfo_vector.push_back( otinfo );
     auto otiles = builder.CreateVector( otinfo_vector );
 
     auto name = builder.CreateString(_name);
-    auto opinfo = NNExecutor::CreateInput(builder, name, otiles);
+    auto opinfo = NNFramework::CreateInput(builder, name, otiles);
 
     /* Generate instruction
      */
-    return CreateInstruction( builder, NNExecutor::OpCode_Input, 
-            NNExecutor::OpInfo_Input, opinfo.Union() );
+    return CreateInstruction( builder, NNFramework::OpCode_Input, 
+            NNFramework::OpInfo_Input, opinfo.Union() );
 }
 
 }   // namespace framework
