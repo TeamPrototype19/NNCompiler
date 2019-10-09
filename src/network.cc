@@ -376,8 +376,10 @@ bool Network::GenerateCompiledOutput(void) {
     flatbuffers::FlatBufferBuilder builder(128);
 
     std::vector<flatbuffers::Offset<NNFramework::Instruction>> insts;
-
+    
+    cout << "Compilng phase: GenerateCompiledOutput\n";
     for(auto layer : _sched_layers) {
+        cout << "Compiling... '" << layer->get_name() << "'.\n";
         insts.push_back( layer->GenerateCompiledOutput(builder) );
     }
 

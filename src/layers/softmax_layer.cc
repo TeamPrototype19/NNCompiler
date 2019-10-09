@@ -61,8 +61,8 @@ SoftmaxLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
 
     /* Generate instruction
      */
-    return CreateInstruction( builder, NNFramework::OpCode_Convolution, 
-            NNFramework::OpInfo_Conv, opinfo.Union() );
+    return CreateInstruction( builder, NNFramework::OpCode_Softmax, 
+            NNFramework::OpInfo_Softmax, opinfo.Union() );
 
     return true;
 }
