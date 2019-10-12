@@ -12,7 +12,13 @@ struct Instruction;
 
 struct TileInfo;
 
+struct MemAlloc;
+
+struct MemFree;
+
 struct Input;
+
+struct Output;
 
 struct Conv;
 
@@ -28,68 +34,83 @@ struct InstPacket;
 
 /// Instruction OP code definitions
 enum OpCode {
-  OpCode_Input = 0,
-  OpCode_Convolution = 1,
-  OpCode_Relu = 2,
-  OpCode_Pooling = 3,
-  OpCode_FullyConnected = 4,
-  OpCode_Softmax = 5,
-  OpCode_MIN = OpCode_Input,
-  OpCode_MAX = OpCode_Softmax
+  OpCode_MemAlloc = 0,
+  OpCode_Input = 1,
+  OpCode_Convolution = 2,
+  OpCode_Relu = 3,
+  OpCode_Pooling = 4,
+  OpCode_FullyConnected = 5,
+  OpCode_Softmax = 6,
+  OpCode_Output = 7,
+  OpCode_MemFree = 8,
+  OpCode_MIN = OpCode_MemAlloc,
+  OpCode_MAX = OpCode_MemFree
 };
 
-inline const OpCode (&EnumValuesOpCode())[6] {
+inline const OpCode (&EnumValuesOpCode())[9] {
   static const OpCode values[] = {
+    OpCode_MemAlloc,
     OpCode_Input,
     OpCode_Convolution,
     OpCode_Relu,
     OpCode_Pooling,
     OpCode_FullyConnected,
-    OpCode_Softmax
+    OpCode_Softmax,
+    OpCode_Output,
+    OpCode_MemFree
   };
   return values;
 }
 
 inline const char * const *EnumNamesOpCode() {
   static const char * const names[] = {
+    "MemAlloc",
     "Input",
     "Convolution",
     "Relu",
     "Pooling",
     "FullyConnected",
     "Softmax",
+    "Output",
+    "MemFree",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameOpCode(OpCode e) {
-  if (e < OpCode_Input || e > OpCode_Softmax) return "";
+  if (e < OpCode_MemAlloc || e > OpCode_MemFree) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesOpCode()[index];
 }
 
 enum OpInfo {
   OpInfo_NONE = 0,
-  OpInfo_Input = 1,
-  OpInfo_Conv = 2,
-  OpInfo_Relu = 3,
-  OpInfo_Pooling = 4,
-  OpInfo_FC = 5,
-  OpInfo_Softmax = 6,
+  OpInfo_MemAlloc = 1,
+  OpInfo_Input = 2,
+  OpInfo_Conv = 3,
+  OpInfo_Relu = 4,
+  OpInfo_Pooling = 5,
+  OpInfo_FC = 6,
+  OpInfo_Softmax = 7,
+  OpInfo_Output = 8,
+  OpInfo_MemFree = 9,
   OpInfo_MIN = OpInfo_NONE,
-  OpInfo_MAX = OpInfo_Softmax
+  OpInfo_MAX = OpInfo_MemFree
 };
 
-inline const OpInfo (&EnumValuesOpInfo())[7] {
+inline const OpInfo (&EnumValuesOpInfo())[10] {
   static const OpInfo values[] = {
     OpInfo_NONE,
+    OpInfo_MemAlloc,
     OpInfo_Input,
     OpInfo_Conv,
     OpInfo_Relu,
     OpInfo_Pooling,
     OpInfo_FC,
-    OpInfo_Softmax
+    OpInfo_Softmax,
+    OpInfo_Output,
+    OpInfo_MemFree
   };
   return values;
 }
@@ -97,25 +118,32 @@ inline const OpInfo (&EnumValuesOpInfo())[7] {
 inline const char * const *EnumNamesOpInfo() {
   static const char * const names[] = {
     "NONE",
+    "MemAlloc",
     "Input",
     "Conv",
     "Relu",
     "Pooling",
     "FC",
     "Softmax",
+    "Output",
+    "MemFree",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameOpInfo(OpInfo e) {
-  if (e < OpInfo_NONE || e > OpInfo_Softmax) return "";
+  if (e < OpInfo_NONE || e > OpInfo_MemFree) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesOpInfo()[index];
 }
 
 template<typename T> struct OpInfoTraits {
   static const OpInfo enum_value = OpInfo_NONE;
+};
+
+template<> struct OpInfoTraits<MemAlloc> {
+  static const OpInfo enum_value = OpInfo_MemAlloc;
 };
 
 template<> struct OpInfoTraits<Input> {
@@ -142,6 +170,14 @@ template<> struct OpInfoTraits<Softmax> {
   static const OpInfo enum_value = OpInfo_Softmax;
 };
 
+template<> struct OpInfoTraits<Output> {
+  static const OpInfo enum_value = OpInfo_Output;
+};
+
+template<> struct OpInfoTraits<MemFree> {
+  static const OpInfo enum_value = OpInfo_MemFree;
+};
+
 bool VerifyOpInfo(flatbuffers::Verifier &verifier, const void *obj, OpInfo type);
 bool VerifyOpInfoVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
 
@@ -161,6 +197,9 @@ struct Instruction FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const void *>(VT_OPERAND);
   }
   template<typename T> const T *operand_as() const;
+  const MemAlloc *operand_as_MemAlloc() const {
+    return operand_type() == OpInfo_MemAlloc ? static_cast<const MemAlloc *>(operand()) : nullptr;
+  }
   const Input *operand_as_Input() const {
     return operand_type() == OpInfo_Input ? static_cast<const Input *>(operand()) : nullptr;
   }
@@ -179,6 +218,12 @@ struct Instruction FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const Softmax *operand_as_Softmax() const {
     return operand_type() == OpInfo_Softmax ? static_cast<const Softmax *>(operand()) : nullptr;
   }
+  const Output *operand_as_Output() const {
+    return operand_type() == OpInfo_Output ? static_cast<const Output *>(operand()) : nullptr;
+  }
+  const MemFree *operand_as_MemFree() const {
+    return operand_type() == OpInfo_MemFree ? static_cast<const MemFree *>(operand()) : nullptr;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_OPCODE) &&
@@ -188,6 +233,10 @@ struct Instruction FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.EndTable();
   }
 };
+
+template<> inline const MemAlloc *Instruction::operand_as<MemAlloc>() const {
+  return operand_as_MemAlloc();
+}
 
 template<> inline const Input *Instruction::operand_as<Input>() const {
   return operand_as_Input();
@@ -211,6 +260,14 @@ template<> inline const FC *Instruction::operand_as<FC>() const {
 
 template<> inline const Softmax *Instruction::operand_as<Softmax>() const {
   return operand_as_Softmax();
+}
+
+template<> inline const Output *Instruction::operand_as<Output>() const {
+  return operand_as_Output();
+}
+
+template<> inline const MemFree *Instruction::operand_as<MemFree>() const {
+  return operand_as_MemFree();
 }
 
 struct InstructionBuilder {
@@ -239,7 +296,7 @@ struct InstructionBuilder {
 
 inline flatbuffers::Offset<Instruction> CreateInstruction(
     flatbuffers::FlatBufferBuilder &_fbb,
-    OpCode opcode = OpCode_Input,
+    OpCode opcode = OpCode_MemAlloc,
     OpInfo operand_type = OpInfo_NONE,
     flatbuffers::Offset<void> operand = 0) {
   InstructionBuilder builder_(_fbb);
@@ -330,6 +387,130 @@ inline flatbuffers::Offset<TileInfo> CreateTileInfo(
 }
 
 /// Operand info of each instruction (kernel)
+struct MemAlloc FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_KERNEL_NAME = 4,
+    VT_TOTAL_BUFF_SIZE = 6
+  };
+  const flatbuffers::String *kernel_name() const {
+    return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
+  }
+  uint64_t total_buff_size() const {
+    return GetField<uint64_t>(VT_TOTAL_BUFF_SIZE, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_KERNEL_NAME) &&
+           verifier.VerifyString(kernel_name()) &&
+           VerifyField<uint64_t>(verifier, VT_TOTAL_BUFF_SIZE) &&
+           verifier.EndTable();
+  }
+};
+
+struct MemAllocBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
+    fbb_.AddOffset(MemAlloc::VT_KERNEL_NAME, kernel_name);
+  }
+  void add_total_buff_size(uint64_t total_buff_size) {
+    fbb_.AddElement<uint64_t>(MemAlloc::VT_TOTAL_BUFF_SIZE, total_buff_size, 0);
+  }
+  explicit MemAllocBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MemAllocBuilder &operator=(const MemAllocBuilder &);
+  flatbuffers::Offset<MemAlloc> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<MemAlloc>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MemAlloc> CreateMemAlloc(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
+    uint64_t total_buff_size = 0) {
+  MemAllocBuilder builder_(_fbb);
+  builder_.add_total_buff_size(total_buff_size);
+  builder_.add_kernel_name(kernel_name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<MemAlloc> CreateMemAllocDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *kernel_name = nullptr,
+    uint64_t total_buff_size = 0) {
+  auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  return NNFramework::CreateMemAlloc(
+      _fbb,
+      kernel_name__,
+      total_buff_size);
+}
+
+struct MemFree FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_KERNEL_NAME = 4,
+    VT_TOTAL_BUFF_SIZE = 6
+  };
+  const flatbuffers::String *kernel_name() const {
+    return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
+  }
+  uint64_t total_buff_size() const {
+    return GetField<uint64_t>(VT_TOTAL_BUFF_SIZE, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_KERNEL_NAME) &&
+           verifier.VerifyString(kernel_name()) &&
+           VerifyField<uint64_t>(verifier, VT_TOTAL_BUFF_SIZE) &&
+           verifier.EndTable();
+  }
+};
+
+struct MemFreeBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
+    fbb_.AddOffset(MemFree::VT_KERNEL_NAME, kernel_name);
+  }
+  void add_total_buff_size(uint64_t total_buff_size) {
+    fbb_.AddElement<uint64_t>(MemFree::VT_TOTAL_BUFF_SIZE, total_buff_size, 0);
+  }
+  explicit MemFreeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MemFreeBuilder &operator=(const MemFreeBuilder &);
+  flatbuffers::Offset<MemFree> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<MemFree>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MemFree> CreateMemFree(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
+    uint64_t total_buff_size = 0) {
+  MemFreeBuilder builder_(_fbb);
+  builder_.add_total_buff_size(total_buff_size);
+  builder_.add_kernel_name(kernel_name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<MemFree> CreateMemFreeDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *kernel_name = nullptr,
+    uint64_t total_buff_size = 0) {
+  auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  return NNFramework::CreateMemFree(
+      _fbb,
+      kernel_name__,
+      total_buff_size);
+}
+
 struct Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_KERNEL_NAME = 4,
@@ -393,6 +574,71 @@ inline flatbuffers::Offset<Input> CreateInputDirect(
       _fbb,
       kernel_name__,
       otile__);
+}
+
+struct Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_KERNEL_NAME = 4,
+    VT_ITILE = 6
+  };
+  const flatbuffers::String *kernel_name() const {
+    return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *itile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_ITILE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_KERNEL_NAME) &&
+           verifier.VerifyString(kernel_name()) &&
+           VerifyOffset(verifier, VT_ITILE) &&
+           verifier.VerifyVector(itile()) &&
+           verifier.VerifyVectorOfTables(itile()) &&
+           verifier.EndTable();
+  }
+};
+
+struct OutputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
+    fbb_.AddOffset(Output::VT_KERNEL_NAME, kernel_name);
+  }
+  void add_itile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile) {
+    fbb_.AddOffset(Output::VT_ITILE, itile);
+  }
+  explicit OutputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  OutputBuilder &operator=(const OutputBuilder &);
+  flatbuffers::Offset<Output> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Output>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Output> CreateOutput(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile = 0) {
+  OutputBuilder builder_(_fbb);
+  builder_.add_itile(itile);
+  builder_.add_kernel_name(kernel_name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Output> CreateOutputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *kernel_name = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *itile = nullptr) {
+  auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  auto itile__ = itile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*itile) : 0;
+  return NNFramework::CreateOutput(
+      _fbb,
+      kernel_name__,
+      itile__);
 }
 
 struct Conv FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1052,6 +1298,10 @@ inline bool VerifyOpInfo(flatbuffers::Verifier &verifier, const void *obj, OpInf
     case OpInfo_NONE: {
       return true;
     }
+    case OpInfo_MemAlloc: {
+      auto ptr = reinterpret_cast<const MemAlloc *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
     case OpInfo_Input: {
       auto ptr = reinterpret_cast<const Input *>(obj);
       return verifier.VerifyTable(ptr);
@@ -1074,6 +1324,14 @@ inline bool VerifyOpInfo(flatbuffers::Verifier &verifier, const void *obj, OpInf
     }
     case OpInfo_Softmax: {
       auto ptr = reinterpret_cast<const Softmax *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case OpInfo_Output: {
+      auto ptr = reinterpret_cast<const Output *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case OpInfo_MemFree: {
+      auto ptr = reinterpret_cast<const MemFree *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return false;

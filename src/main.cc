@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
     network.loadWeight( wgt_param );
     network.Compiling();
 	network.WriteNetworkToDotFile( outputFileName );
+    //network.PrintInfo();
 
     close_log_file();
 

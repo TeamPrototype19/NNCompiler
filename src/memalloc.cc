@@ -8,12 +8,12 @@ using namespace std;
 
 namespace framework {
 
-MemoryAlloc::MemoryAlloc(vector<shared_ptr<NNLayer>> sched_layers, bool &success) {
+MemoryAlloc::MemoryAlloc(CompileContext &context) {
     // TODO: check it later for reconfigurability.
     data_unit_size = sizeof(float);
 
-    SetMemoryBlockInfos(sched_layers);
-    success = MemoryAllocAlgo_v1(sched_layers);
+    SetMemoryBlockInfos(context);
+    context.compile_result = MemoryAllocAlgo_v1(context);
 
 #if 1
     /* DEBUG: Print all buffers address
@@ -30,11 +30,11 @@ MemoryAlloc::MemoryAlloc(vector<shared_ptr<NNLayer>> sched_layers, bool &success
 MemoryAlloc::~MemoryAlloc(void) {
 }
 
-void MemoryAlloc::SetMemoryBlockInfos( vector<shared_ptr<NNLayer>> &sched_layer ) {
+void MemoryAlloc::SetMemoryBlockInfos( CompileContext &context ) {
 
     /* Phase 1: set memory block info.
      */
-    for(auto layer : sched_layer) {
+    for(auto layer : *(context._sched_layers)) {
         for(int i = 0 ; i < layer->GetOutBlobSize() ; i++) {
             auto blob_p = layer->GetOutBlobPtr(i);
             memory_block_info_t mblk;
@@ -49,7 +49,7 @@ void MemoryAlloc::SetMemoryBlockInfos( vector<shared_ptr<NNLayer>> &sched_layer 
 
     /* Phase 2: set memory reference counter
      */
-    for(auto layer : sched_layer) {
+    for(auto layer : *(context._sched_layers) ) {
         for(int i = 0 ; i < layer->GetInBlobSize() ; i++) {
             auto blob_p = layer->GetInBlobPtr(i);
 
@@ -59,14 +59,14 @@ void MemoryAlloc::SetMemoryBlockInfos( vector<shared_ptr<NNLayer>> &sched_layer 
     }
 }
 
-bool MemoryAlloc::MemoryAllocAlgo_v1( vector<shared_ptr<NNLayer>> &sched_layer ) {
+bool MemoryAlloc::MemoryAllocAlgo_v1( CompileContext &context ) {
     /* simple memory allocation algorithm: 
      * + No memory use optimization
      * + Linearly allocates all output buffers of all layers
      */
     unsigned long free_address = 0;
 
-    for(auto layer : sched_layer) {
+    for(auto layer : *(context._sched_layers) )  {
         /* Allocates memory block for Output blob
          */
         for(int i = 0 ; i < layer->GetOutBlobSize() ; i++) {
@@ -76,6 +76,8 @@ bool MemoryAlloc::MemoryAllocAlgo_v1( vector<shared_ptr<NNLayer>> &sched_layer )
             free_address += (unsigned long) _mblocks[ bp ].size_in_byte;
         }
     }
+
+    context.total_buffer_size = free_address;
 
     cout << "MemoryAllocAlgo_v1 result: total allocated memory = " << free_address << endl;
 

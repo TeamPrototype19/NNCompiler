@@ -14,6 +14,12 @@ using namespace std;
 
 namespace framework {
 
+typedef struct _CompileContext {
+    bool compile_result = false;
+    vector<shared_ptr<NNLayer>> *_sched_layers;
+    unsigned long total_buffer_size;
+} CompileContext;
+
 class Network : public Graph {
 public:
     enum {
@@ -36,7 +42,7 @@ public:
     /* Functions for network compiling
      */
     void Compiling(void);
-    bool GenerateCompiledOutput(void);
+    void GenerateCompiledOutput(CompileContext &context);
 
 private:
     /* Input blob dimension

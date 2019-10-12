@@ -351,20 +351,22 @@ void Network::WriteNetworkToDotFile(string filename) {
 
 
 void Network::Compiling(void) {
-    bool success = false;
+    CompileContext context;
+    context.compile_result = false;
+    context._sched_layers = &_sched_layers;
 
     /* PHASE 1: memory address allocation (mapping)
      */
-    MemoryAlloc  memalloc( _sched_layers, success );
-    if( success == false ) {
+    MemoryAlloc  memalloc( context );
+    if( context.compile_result == false ) {
         std::cerr << "[ERROR] compiling phase: memory address allocation." << std::endl;
         return;
     }
 
     /* PHASE 2: Generate compiled output (temp)
      */
-    success = GenerateCompiledOutput();
-    if( success == false ) {
+    GenerateCompiledOutput( context );
+    if( context.compile_result == false ) {
         std::cerr << "[ERROR] compiling phase: generate compiled output." << std::endl;
         return;
     }
@@ -372,17 +374,64 @@ void Network::Compiling(void) {
     return;
 }
 
-bool Network::GenerateCompiledOutput(void) {
+void Network::GenerateCompiledOutput(CompileContext &context) {
     flatbuffers::FlatBufferBuilder builder(128);
 
+    context.compile_result = false;
     std::vector<flatbuffers::Offset<NNFramework::Instruction>> insts;
+
+    /* Generates Flatbuffer for memory allocation operation.
+     */
+    auto ma_name = builder.CreateString( "Memory allocation" );
+    unsigned long tbuff_size = context.total_buffer_size;
+    auto mainfo = NNFramework::CreateMemAlloc( builder, ma_name, tbuff_size );
+    insts.push_back( CreateInstruction( builder, NNFramework::OpCode_MemAlloc, 
+            NNFramework::OpInfo_MemAlloc, mainfo.Union() ) );
     
+    /* Generates Flatbuffer for each execution layer.
+     */
     cout << "Compilng phase: GenerateCompiledOutput\n";
-    for(auto layer : _sched_layers) {
+    for(auto layer : *(context._sched_layers)) {
         cout << "Compiling... '" << layer->get_name() << "'.\n";
         insts.push_back( layer->GenerateCompiledOutput(builder) );
     }
 
+    /* Generates Flatbuffer for the last output nodes
+     */
+    for(unsigned int i = 0; i < _exit_nodes.size(); i++) {
+        auto obp = dynamic_pointer_cast<Blob>( _exit_nodes[i] );
+        assert( obp != nullptr );
+
+        unsigned long oaddr = obp->get_mem_addr();
+        int ots_n = obp->get_dim()[N];
+        int ots_c = obp->get_dim()[C];
+        int ots_h = obp->get_dim()[H];
+        int ots_w = obp->get_dim()[W];
+        auto itinfo = NNFramework::CreateTileInfo( builder, 
+                oaddr, ots_n, ots_c, ots_h, ots_w );
+
+        std::vector<flatbuffers::Offset<NNFramework::TileInfo>> itinfo_vector;
+        itinfo_vector.push_back( itinfo );
+        auto itiles = builder.CreateVector( itinfo_vector );
+
+        string name_ = "Output_" + to_string(i);
+        auto op_name = builder.CreateString( name_ );
+        auto opinfo = NNFramework::CreateOutput(builder, op_name, itiles);
+
+        insts.push_back( CreateInstruction( builder, NNFramework::OpCode_Output, 
+                NNFramework::OpInfo_Output, opinfo.Union() ) );
+    }
+
+    /* Generates Flatbuffer for memory free operation.
+     */
+    auto mf_name = builder.CreateString( "Memory free" );
+    auto mfinfo = NNFramework::CreateMemFree( builder, mf_name );
+    insts.push_back( CreateInstruction( builder, NNFramework::OpCode_MemFree, 
+            NNFramework::OpInfo_MemFree, mfinfo.Union() ) );
+ 
+
+    /* Finalizes Flatbuffer structure
+     */
     auto inst_vector = builder.CreateVector( insts );
     auto cgo = NNFramework::CreateInstPacket( builder, inst_vector );
     builder.Finish( cgo );
@@ -397,7 +446,9 @@ bool Network::GenerateCompiledOutput(void) {
     ofbfile.write( (char*) buf_p, buf_size );
     ofbfile.close();
 
-    return true;
+    context.compile_result = true;
+
+    return;
 }
 
 }   // namespace framework

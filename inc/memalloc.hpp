@@ -21,7 +21,7 @@ typedef struct _memory_block_info {
 
 class MemoryAlloc {
 public:
-    MemoryAlloc(vector<shared_ptr<NNLayer>> sched_layers, bool &success);
+    MemoryAlloc(CompileContext &context);
     ~MemoryAlloc(void);
 
 private:
@@ -30,8 +30,8 @@ private:
     /* Memory allocation algorithm ver.1
      * & its member functions.
      */
-    void SetMemoryBlockInfos(vector<shared_ptr<NNLayer>> &sched_layer);
-    bool MemoryAllocAlgo_v1(vector<shared_ptr<NNLayer>> &sched_layer);
+    void SetMemoryBlockInfos(CompileContext &context);
+    bool MemoryAllocAlgo_v1(CompileContext &context);
 
     int data_unit_size;
     map<shared_ptr<Blob>, memory_block_info_t> _mblocks;

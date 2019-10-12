@@ -3,22 +3,28 @@ namespace NNFramework;
 
 /// Instruction OP code definitions
 enum OpCode : ubyte {
+    MemAlloc,
     Input,
     Convolution,
     Relu,
     Pooling,
     FullyConnected,
-    Softmax
+    Softmax,
+    Output,
+    MemFree
 }
 
 
 union OpInfo {
+    MemAlloc,
     Input,
     Conv,
     Relu,
     Pooling,
     FC,
-    Softmax
+    Softmax,
+    Output,
+    MemFree
 }
 
 
@@ -38,9 +44,23 @@ table TileInfo {
 
 
 /// Operand info of each instruction (kernel)
+table MemAlloc {
+    kernel_name: string;     // only for DEBUG
+    total_buff_size:ulong;
+}
+
+table MemFree {
+    kernel_name: string;     // only for DEBUG
+}
+
 table Input {
     kernel_name: string;     // only for DEBUG
     otile:[TileInfo];
+}
+
+table Output {
+    kernel_name: string;     // only for DEBUG
+    itile:[TileInfo];
 }
 
 table Conv {
