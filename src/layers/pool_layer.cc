@@ -116,32 +116,8 @@ PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
 
     /* Input tile info setting
      */
-    auto ibp = GetInBlobPtr(0);
-    unsigned long iaddr = ibp->get_mem_addr();
-    int its_n = ibp->get_dim()[N];
-    int its_c = ibp->get_dim()[C];
-    int its_h = ibp->get_dim()[H];
-    int its_w = ibp->get_dim()[W];
-    auto itinfo = NNFramework::CreateTileInfo( builder, 
-            iaddr, its_n, its_c, its_h, its_w );
-
-    auto obp = GetOutBlobPtr(0);
-    unsigned long oaddr = obp->get_mem_addr();
-    int ots_n = obp->get_dim()[N];
-    int ots_c = obp->get_dim()[C];
-    int ots_h = obp->get_dim()[H];
-    int ots_w = obp->get_dim()[W];
-    auto otinfo = NNFramework::CreateTileInfo( builder, 
-            oaddr, ots_n, ots_c, ots_h, ots_w );
-
-    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> itinfo_vector;
-    itinfo_vector.push_back( itinfo );
-    auto itiles = builder.CreateVector( itinfo_vector );
-
-    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> otinfo_vector;
-    otinfo_vector.push_back( otinfo );
-    auto otiles = builder.CreateVector( otinfo_vector );
-
+    auto itiles = setInTileInfo( builder );
+    auto otiles = setOutTileInfo( builder );
 
     /* Create Pooling table structure 
      */

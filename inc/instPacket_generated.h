@@ -309,33 +309,19 @@ inline flatbuffers::Offset<Instruction> CreateInstruction(
 struct TileInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ADDR = 4,
-    VT_TSIZE_N = 6,
-    VT_TSIZE_C = 8,
-    VT_TSIZE_H = 10,
-    VT_TSIZE_W = 12
+    VT_TSIZE = 6
   };
   uint64_t addr() const {
     return GetField<uint64_t>(VT_ADDR, 0);
   }
-  int32_t tsize_n() const {
-    return GetField<int32_t>(VT_TSIZE_N, 0);
-  }
-  int32_t tsize_c() const {
-    return GetField<int32_t>(VT_TSIZE_C, 0);
-  }
-  int32_t tsize_h() const {
-    return GetField<int32_t>(VT_TSIZE_H, 0);
-  }
-  int32_t tsize_w() const {
-    return GetField<int32_t>(VT_TSIZE_W, 0);
+  const flatbuffers::Vector<int32_t> *tsize() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_TSIZE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint64_t>(verifier, VT_ADDR) &&
-           VerifyField<int32_t>(verifier, VT_TSIZE_N) &&
-           VerifyField<int32_t>(verifier, VT_TSIZE_C) &&
-           VerifyField<int32_t>(verifier, VT_TSIZE_H) &&
-           VerifyField<int32_t>(verifier, VT_TSIZE_W) &&
+           VerifyOffset(verifier, VT_TSIZE) &&
+           verifier.VerifyVector(tsize()) &&
            verifier.EndTable();
   }
 };
@@ -346,17 +332,8 @@ struct TileInfoBuilder {
   void add_addr(uint64_t addr) {
     fbb_.AddElement<uint64_t>(TileInfo::VT_ADDR, addr, 0);
   }
-  void add_tsize_n(int32_t tsize_n) {
-    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_N, tsize_n, 0);
-  }
-  void add_tsize_c(int32_t tsize_c) {
-    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_C, tsize_c, 0);
-  }
-  void add_tsize_h(int32_t tsize_h) {
-    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_H, tsize_h, 0);
-  }
-  void add_tsize_w(int32_t tsize_w) {
-    fbb_.AddElement<int32_t>(TileInfo::VT_TSIZE_W, tsize_w, 0);
+  void add_tsize(flatbuffers::Offset<flatbuffers::Vector<int32_t>> tsize) {
+    fbb_.AddOffset(TileInfo::VT_TSIZE, tsize);
   }
   explicit TileInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -373,17 +350,22 @@ struct TileInfoBuilder {
 inline flatbuffers::Offset<TileInfo> CreateTileInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     uint64_t addr = 0,
-    int32_t tsize_n = 0,
-    int32_t tsize_c = 0,
-    int32_t tsize_h = 0,
-    int32_t tsize_w = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> tsize = 0) {
   TileInfoBuilder builder_(_fbb);
   builder_.add_addr(addr);
-  builder_.add_tsize_w(tsize_w);
-  builder_.add_tsize_h(tsize_h);
-  builder_.add_tsize_c(tsize_c);
-  builder_.add_tsize_n(tsize_n);
+  builder_.add_tsize(tsize);
   return builder_.Finish();
+}
+
+inline flatbuffers::Offset<TileInfo> CreateTileInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint64_t addr = 0,
+    const std::vector<int32_t> *tsize = nullptr) {
+  auto tsize__ = tsize ? _fbb.CreateVector<int32_t>(*tsize) : 0;
+  return NNFramework::CreateTileInfo(
+      _fbb,
+      addr,
+      tsize__);
 }
 
 /// Operand info of each instruction (kernel)
@@ -451,20 +433,15 @@ inline flatbuffers::Offset<MemAlloc> CreateMemAllocDirect(
 
 struct MemFree FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_KERNEL_NAME = 4,
-    VT_TOTAL_BUFF_SIZE = 6
+    VT_KERNEL_NAME = 4
   };
   const flatbuffers::String *kernel_name() const {
     return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
-  }
-  uint64_t total_buff_size() const {
-    return GetField<uint64_t>(VT_TOTAL_BUFF_SIZE, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_KERNEL_NAME) &&
            verifier.VerifyString(kernel_name()) &&
-           VerifyField<uint64_t>(verifier, VT_TOTAL_BUFF_SIZE) &&
            verifier.EndTable();
   }
 };
@@ -474,9 +451,6 @@ struct MemFreeBuilder {
   flatbuffers::uoffset_t start_;
   void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
     fbb_.AddOffset(MemFree::VT_KERNEL_NAME, kernel_name);
-  }
-  void add_total_buff_size(uint64_t total_buff_size) {
-    fbb_.AddElement<uint64_t>(MemFree::VT_TOTAL_BUFF_SIZE, total_buff_size, 0);
   }
   explicit MemFreeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -492,23 +466,19 @@ struct MemFreeBuilder {
 
 inline flatbuffers::Offset<MemFree> CreateMemFree(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
-    uint64_t total_buff_size = 0) {
+    flatbuffers::Offset<flatbuffers::String> kernel_name = 0) {
   MemFreeBuilder builder_(_fbb);
-  builder_.add_total_buff_size(total_buff_size);
   builder_.add_kernel_name(kernel_name);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<MemFree> CreateMemFreeDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const char *kernel_name = nullptr,
-    uint64_t total_buff_size = 0) {
+    const char *kernel_name = nullptr) {
   auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
   return NNFramework::CreateMemFree(
       _fbb,
-      kernel_name__,
-      total_buff_size);
+      kernel_name__);
 }
 
 struct Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

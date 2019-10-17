@@ -50,6 +50,11 @@ public:
     virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) = 0;
 
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<NNFramework::TileInfo>>>
+    setInTileInfo(flatbuffers::FlatBufferBuilder &builder);
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<NNFramework::TileInfo>>>
+    setOutTileInfo(flatbuffers::FlatBufferBuilder &builder);
+
     map<NNLayerType, string> ltype2str = {
         {Input         , "Input"},
         {Convolution   , "Convolution"},

@@ -34,18 +34,7 @@ flatbuffers::Offset<NNFramework::Instruction>
 InputLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Input tile info setting
      */
-    auto obp = GetOutBlobPtr(0);
-    unsigned long oaddr = obp->get_mem_addr();
-    int ots_n = obp->get_dim()[N];
-    int ots_c = obp->get_dim()[C];
-    int ots_h = obp->get_dim()[H];
-    int ots_w = obp->get_dim()[W];
-    auto otinfo = NNFramework::CreateTileInfo( builder, 
-            oaddr, ots_n, ots_c, ots_h, ots_w );
-
-    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> otinfo_vector;
-    otinfo_vector.push_back( otinfo );
-    auto otiles = builder.CreateVector( otinfo_vector );
+    auto otiles = setOutTileInfo( builder );
 
     auto name = builder.CreateString(_name);
     auto opinfo = NNFramework::CreateInput(builder, name, otiles);

@@ -89,5 +89,38 @@ shared_ptr<Blob> NNLayer::GetInBlobPtr(int i) {
     return dynamic_pointer_cast<Blob>(_predecessor[i]);
 }
 
+flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<NNFramework::TileInfo>>>
+NNLayer::setInTileInfo(flatbuffers::FlatBufferBuilder &builder) {
+    /* Input tile info setting
+     */
+    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> itinfo_vector;
+
+    for(int i = 0 ; i < GetInBlobSize() ; i++) {
+        auto ibp = GetInBlobPtr(i);
+        unsigned long iaddr = ibp->get_mem_addr();
+        auto tsize = builder.CreateVector( ibp->get_dim() );
+        auto itinfo = NNFramework::CreateTileInfo( builder, iaddr, tsize );
+        itinfo_vector.push_back( itinfo );
+    }
+
+    return builder.CreateVector( itinfo_vector );
+}
+
+flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<NNFramework::TileInfo>>>
+NNLayer::setOutTileInfo(flatbuffers::FlatBufferBuilder &builder) {
+    /* Output tile info setting
+     */
+    std::vector<flatbuffers::Offset<NNFramework::TileInfo>> otinfo_vector;
+
+    for(int i = 0 ; i < GetOutBlobSize() ; i++) {
+        auto obp = GetOutBlobPtr(i);
+        unsigned long oaddr = obp->get_mem_addr();
+        auto tsize = builder.CreateVector( obp->get_dim() );
+        auto otinfo = NNFramework::CreateTileInfo( builder, oaddr, tsize );
+        otinfo_vector.push_back( otinfo );
+    }
+
+    return builder.CreateVector( otinfo_vector );
+}
 
 }   // namespace framework

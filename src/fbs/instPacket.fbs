@@ -36,10 +36,7 @@ table Instruction {
 
 table TileInfo {
     addr:ulong;
-    tsize_n:int;
-    tsize_c:int;
-    tsize_h:int;
-    tsize_w:int;
+    tsize:[int];
 }
 
 
