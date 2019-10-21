@@ -10,6 +10,7 @@ enum OpCode : ubyte {
     Pooling,
     FullyConnected,
     Scale,
+    Concat,
     Softmax,
     Output,
     MemFree
@@ -24,6 +25,7 @@ union OpInfo {
     Pooling,
     FC,
     Scale,
+    Concat,
     Softmax,
     Output,
     MemFree
@@ -116,7 +118,12 @@ table Scale {
     otile:[TileInfo];
 }
  
-
+table Concat {
+    kernel_name:string;     // only for DEBUG
+    itile:[TileInfo];
+    otile:[TileInfo];
+}
+ 
 /// root table definition
 table InstPacket {
     packet:[Instruction];

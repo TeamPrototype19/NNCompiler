@@ -13,18 +13,38 @@ PoolLayer::PoolLayer(const caffe::LayerParameter& lparam)
 
     const caffe::PoolingParameter& param = lparam.pooling_param();
 
-    if( param.has_pad_w() ) _pad_w = param.pad_w();
-    else                    _pad_w = 0;
-    if( param.has_pad_h() ) _pad_h = param.pad_h();
-    else                    _pad_h = 0;
-    if( param.has_stride_w() ) _stride_w = param.stride_w();
-    else                       _stride_w = 1;
-    if( param.has_stride_h() ) _stride_h = param.stride_h();
-    else                       _stride_h = 1;
-    if( param.has_kernel_w() ) _kernel_w = param.kernel_w();
-    else                       _kernel_w = 1;
-    if( param.has_kernel_h() ) _kernel_h = param.kernel_h();
-    else                       _kernel_h = 1;
+    _kernel_w = 1;
+    _kernel_h = 1;
+    _stride_w = 1;
+    _stride_h = 1;
+    _pad_w = 0;
+    _pad_h = 0;
+
+    if( param.has_pad_w() )
+        _pad_w = param.pad_w();
+    if( param.has_pad_h() )
+        _pad_h = param.pad_h();
+    if( param.has_stride_w() )
+        _stride_w = param.stride_w();
+    if( param.has_stride_h() )
+        _stride_h = param.stride_h();
+    if( param.has_kernel_w() )
+        _kernel_w = param.kernel_w();
+    if( param.has_kernel_h() )
+        _kernel_h = param.kernel_h();
+
+    if( param.has_kernel_size() ) {
+        _kernel_w = param.kernel_size();
+        _kernel_h = param.kernel_size();
+    }
+    if( param.has_stride() ) {
+        _stride_w = param.stride();
+        _stride_h = param.stride();
+    }
+    if( param.has_pad() ) {
+        _pad_w = param.pad();
+        _pad_h = param.pad();
+    }
 
     if( param.has_global_pooling() )
         _global_pooling = param.global_pooling();
@@ -40,15 +60,6 @@ PoolLayer::PoolLayer(const caffe::LayerParameter& lparam)
             _pool_type = STOCHASTIC_POOL;
         else
             throw runtime_error("Unknown pooling type!");
-    }
-
-    if( param.has_kernel_size() ) {
-        _kernel_w = param.kernel_size();
-        _kernel_h = param.kernel_size();
-    }
-    if( param.has_stride() ) {
-        _stride_w = param.stride();
-        _stride_h = param.stride();
     }
 
 

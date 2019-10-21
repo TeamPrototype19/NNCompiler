@@ -17,6 +17,7 @@ public:
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
 private:
+    int axis;
 };
 
 }   // namespace framework
