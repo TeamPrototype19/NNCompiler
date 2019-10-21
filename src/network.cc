@@ -9,6 +9,17 @@
 #include "memalloc.hpp"
 #include "instPacket_generated.h"
 
+#include "bnorm_layer.hpp"
+#include "concat_layer.hpp"
+#include "conv_layer.hpp"
+#include "drop_layer.hpp"
+#include "fc_layer.hpp"
+#include "input_layer.hpp"
+#include "pool_layer.hpp"
+#include "relu_layer.hpp"
+#include "scale_layer.hpp"
+#include "softmax_layer.hpp"
+
 using namespace std;
 
 namespace framework {
@@ -216,25 +227,50 @@ void Network::loadWeight(const caffe::NetParameter& wgt) {
             }
             auto layer = _name2layers[ lparam.name() ];
             if( layer->get_layer_type() == Convolution ) {
-                assert( lparam.blobs_size() == 2 );
+                assert( lparam.blobs_size() == 1 || lparam.blobs_size() == 2 );
                 auto clayer = static_pointer_cast<ConvLayer>(layer);
+
+                // Set weight data
                 clayer->resizeWeight( lparam.blobs(0).data_size() );
-                clayer->resizeBias( lparam.blobs(1).data_size() );
                 for(int j = 0 ; j < lparam.blobs(0).data_size() ; j++)
                     clayer->setWeight( lparam.blobs(0).data(j) , j );
-                for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
-                    clayer->setBias( lparam.blobs(1).data(j) , j );
+                
+                // Set bias data
+                if( lparam.blobs_size() == 2 ) {
+                    clayer->resizeBias( lparam.blobs(1).data_size() );
+                    for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
+                        clayer->setBias( lparam.blobs(1).data(j) , j );
+                }
             }
             else if( layer->get_layer_type() == FullyConnected ) {
-                assert( lparam.blobs_size() == 2 );
+                assert( lparam.blobs_size() == 1 || lparam.blobs_size() == 2 );
                 auto flayer = static_pointer_cast<FullyConnectedLayer>(layer);
+
                 flayer->resizeWeight( lparam.blobs(0).data_size() );
-                flayer->resizeBias( lparam.blobs(1).data_size() );
                 for(int j = 0 ; j < lparam.blobs(0).data_size() ; j++)
                     flayer->setWeight( lparam.blobs(0).data(j) , j );
-                for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
-                    flayer->setBias( lparam.blobs(1).data(j) , j );
+
+                if( lparam.blobs_size() == 2 ) {
+                    flayer->resizeBias( lparam.blobs(1).data_size() );
+                    for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
+                        flayer->setBias( lparam.blobs(1).data(j) , j );
+                }
             }
+            else if( layer->get_layer_type() == Scale ) {
+                assert( lparam.blobs_size() == 1 || lparam.blobs_size() == 2 );
+                auto slayer = static_pointer_cast<ScaleLayer>(layer);
+
+                slayer->resizeWeight( lparam.blobs(0).data_size() );
+                for(int j = 0 ; j < lparam.blobs(0).data_size() ; j++)
+                    slayer->setWeight( lparam.blobs(0).data(j) , j );
+
+                if( lparam.blobs_size() == 2 ) {
+                    slayer->resizeBias( lparam.blobs(1).data_size() );
+                    for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
+                        slayer->setBias( lparam.blobs(1).data(j) , j );
+                }
+            }
+
         }
 #if 0
         cout << "layer_name = " << lparam.name() << "\n";
@@ -354,6 +390,7 @@ void Network::Compiling(void) {
     CompileContext context;
     context.compile_result = false;
     context._sched_layers = &_sched_layers;
+    context._entry_nodes = &_entry_nodes;
 
     /* PHASE 1: memory address allocation (mapping)
      */

@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "bnorm_layer.hpp"
 
 using namespace std;
 namespace framework {

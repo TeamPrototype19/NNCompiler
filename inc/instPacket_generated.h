@@ -30,6 +30,8 @@ struct FC;
 
 struct Softmax;
 
+struct Scale;
+
 struct InstPacket;
 
 /// Instruction OP code definitions
@@ -40,14 +42,15 @@ enum OpCode {
   OpCode_Relu = 3,
   OpCode_Pooling = 4,
   OpCode_FullyConnected = 5,
-  OpCode_Softmax = 6,
-  OpCode_Output = 7,
-  OpCode_MemFree = 8,
+  OpCode_Scale = 6,
+  OpCode_Softmax = 7,
+  OpCode_Output = 8,
+  OpCode_MemFree = 9,
   OpCode_MIN = OpCode_MemAlloc,
   OpCode_MAX = OpCode_MemFree
 };
 
-inline const OpCode (&EnumValuesOpCode())[9] {
+inline const OpCode (&EnumValuesOpCode())[10] {
   static const OpCode values[] = {
     OpCode_MemAlloc,
     OpCode_Input,
@@ -55,6 +58,7 @@ inline const OpCode (&EnumValuesOpCode())[9] {
     OpCode_Relu,
     OpCode_Pooling,
     OpCode_FullyConnected,
+    OpCode_Scale,
     OpCode_Softmax,
     OpCode_Output,
     OpCode_MemFree
@@ -70,6 +74,7 @@ inline const char * const *EnumNamesOpCode() {
     "Relu",
     "Pooling",
     "FullyConnected",
+    "Scale",
     "Softmax",
     "Output",
     "MemFree",
@@ -92,14 +97,15 @@ enum OpInfo {
   OpInfo_Relu = 4,
   OpInfo_Pooling = 5,
   OpInfo_FC = 6,
-  OpInfo_Softmax = 7,
-  OpInfo_Output = 8,
-  OpInfo_MemFree = 9,
+  OpInfo_Scale = 7,
+  OpInfo_Softmax = 8,
+  OpInfo_Output = 9,
+  OpInfo_MemFree = 10,
   OpInfo_MIN = OpInfo_NONE,
   OpInfo_MAX = OpInfo_MemFree
 };
 
-inline const OpInfo (&EnumValuesOpInfo())[10] {
+inline const OpInfo (&EnumValuesOpInfo())[11] {
   static const OpInfo values[] = {
     OpInfo_NONE,
     OpInfo_MemAlloc,
@@ -108,6 +114,7 @@ inline const OpInfo (&EnumValuesOpInfo())[10] {
     OpInfo_Relu,
     OpInfo_Pooling,
     OpInfo_FC,
+    OpInfo_Scale,
     OpInfo_Softmax,
     OpInfo_Output,
     OpInfo_MemFree
@@ -124,6 +131,7 @@ inline const char * const *EnumNamesOpInfo() {
     "Relu",
     "Pooling",
     "FC",
+    "Scale",
     "Softmax",
     "Output",
     "MemFree",
@@ -164,6 +172,10 @@ template<> struct OpInfoTraits<Pooling> {
 
 template<> struct OpInfoTraits<FC> {
   static const OpInfo enum_value = OpInfo_FC;
+};
+
+template<> struct OpInfoTraits<Scale> {
+  static const OpInfo enum_value = OpInfo_Scale;
 };
 
 template<> struct OpInfoTraits<Softmax> {
@@ -215,6 +227,9 @@ struct Instruction FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const FC *operand_as_FC() const {
     return operand_type() == OpInfo_FC ? static_cast<const FC *>(operand()) : nullptr;
   }
+  const Scale *operand_as_Scale() const {
+    return operand_type() == OpInfo_Scale ? static_cast<const Scale *>(operand()) : nullptr;
+  }
   const Softmax *operand_as_Softmax() const {
     return operand_type() == OpInfo_Softmax ? static_cast<const Softmax *>(operand()) : nullptr;
   }
@@ -256,6 +271,10 @@ template<> inline const Pooling *Instruction::operand_as<Pooling>() const {
 
 template<> inline const FC *Instruction::operand_as<FC>() const {
   return operand_as_FC();
+}
+
+template<> inline const Scale *Instruction::operand_as<Scale>() const {
+  return operand_as_Scale();
 }
 
 template<> inline const Softmax *Instruction::operand_as<Softmax>() const {
@@ -1211,6 +1230,114 @@ inline flatbuffers::Offset<Softmax> CreateSoftmaxDirect(
       otile__);
 }
 
+struct Scale FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_KERNEL_NAME = 4,
+    VT_WEIGHT = 6,
+    VT_BIAS = 8,
+    VT_ITILE = 10,
+    VT_OTILE = 12
+  };
+  const flatbuffers::String *kernel_name() const {
+    return GetPointer<const flatbuffers::String *>(VT_KERNEL_NAME);
+  }
+  const flatbuffers::Vector<float> *weight() const {
+    return GetPointer<const flatbuffers::Vector<float> *>(VT_WEIGHT);
+  }
+  const flatbuffers::Vector<float> *bias() const {
+    return GetPointer<const flatbuffers::Vector<float> *>(VT_BIAS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *itile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_ITILE);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *otile() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<TileInfo>> *>(VT_OTILE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_KERNEL_NAME) &&
+           verifier.VerifyString(kernel_name()) &&
+           VerifyOffset(verifier, VT_WEIGHT) &&
+           verifier.VerifyVector(weight()) &&
+           VerifyOffset(verifier, VT_BIAS) &&
+           verifier.VerifyVector(bias()) &&
+           VerifyOffset(verifier, VT_ITILE) &&
+           verifier.VerifyVector(itile()) &&
+           verifier.VerifyVectorOfTables(itile()) &&
+           VerifyOffset(verifier, VT_OTILE) &&
+           verifier.VerifyVector(otile()) &&
+           verifier.VerifyVectorOfTables(otile()) &&
+           verifier.EndTable();
+  }
+};
+
+struct ScaleBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_kernel_name(flatbuffers::Offset<flatbuffers::String> kernel_name) {
+    fbb_.AddOffset(Scale::VT_KERNEL_NAME, kernel_name);
+  }
+  void add_weight(flatbuffers::Offset<flatbuffers::Vector<float>> weight) {
+    fbb_.AddOffset(Scale::VT_WEIGHT, weight);
+  }
+  void add_bias(flatbuffers::Offset<flatbuffers::Vector<float>> bias) {
+    fbb_.AddOffset(Scale::VT_BIAS, bias);
+  }
+  void add_itile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile) {
+    fbb_.AddOffset(Scale::VT_ITILE, itile);
+  }
+  void add_otile(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile) {
+    fbb_.AddOffset(Scale::VT_OTILE, otile);
+  }
+  explicit ScaleBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ScaleBuilder &operator=(const ScaleBuilder &);
+  flatbuffers::Offset<Scale> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Scale>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Scale> CreateScale(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> kernel_name = 0,
+    flatbuffers::Offset<flatbuffers::Vector<float>> weight = 0,
+    flatbuffers::Offset<flatbuffers::Vector<float>> bias = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> itile = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<TileInfo>>> otile = 0) {
+  ScaleBuilder builder_(_fbb);
+  builder_.add_otile(otile);
+  builder_.add_itile(itile);
+  builder_.add_bias(bias);
+  builder_.add_weight(weight);
+  builder_.add_kernel_name(kernel_name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Scale> CreateScaleDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *kernel_name = nullptr,
+    const std::vector<float> *weight = nullptr,
+    const std::vector<float> *bias = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *itile = nullptr,
+    const std::vector<flatbuffers::Offset<TileInfo>> *otile = nullptr) {
+  auto kernel_name__ = kernel_name ? _fbb.CreateString(kernel_name) : 0;
+  auto weight__ = weight ? _fbb.CreateVector<float>(*weight) : 0;
+  auto bias__ = bias ? _fbb.CreateVector<float>(*bias) : 0;
+  auto itile__ = itile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*itile) : 0;
+  auto otile__ = otile ? _fbb.CreateVector<flatbuffers::Offset<TileInfo>>(*otile) : 0;
+  return NNFramework::CreateScale(
+      _fbb,
+      kernel_name__,
+      weight__,
+      bias__,
+      itile__,
+      otile__);
+}
+
 /// root table definition
 struct InstPacket FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -1290,6 +1417,10 @@ inline bool VerifyOpInfo(flatbuffers::Verifier &verifier, const void *obj, OpInf
     }
     case OpInfo_FC: {
       auto ptr = reinterpret_cast<const FC *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case OpInfo_Scale: {
+      auto ptr = reinterpret_cast<const Scale *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case OpInfo_Softmax: {

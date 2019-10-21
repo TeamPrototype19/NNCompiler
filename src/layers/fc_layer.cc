@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "fc_layer.hpp"
 #include "blob.hpp"
 
 using namespace std;

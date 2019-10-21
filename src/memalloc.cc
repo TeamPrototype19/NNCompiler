@@ -34,6 +34,21 @@ void MemoryAlloc::SetMemoryBlockInfos( CompileContext &context ) {
 
     /* Phase 1: set memory block info.
      */
+    // check that the entry node is blob or layer.
+    // if entry node is blob, then add it into _mblocks.
+    for(auto node : *(context._entry_nodes)) {
+        shared_ptr<Blob> blob_p = dynamic_pointer_cast<Blob>(node);
+        if( blob_p != nullptr ) {
+            memory_block_info_t mblk;
+            mblk.size_in_dim = blob_p->get_dim();
+            mblk.size_in_byte = total_size( mblk.size_in_dim ) * data_unit_size;
+            mblk.ref_counter = 0;
+
+            _mblocks[ blob_p ] = mblk;
+        }
+    }
+
+    // add output blobs of each layer nodes.
     for(auto layer : *(context._sched_layers)) {
         for(int i = 0 ; i < layer->GetOutBlobSize() ; i++) {
             auto blob_p = layer->GetOutBlobPtr(i);

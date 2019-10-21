@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "relu_layer.hpp"
 #include "blob.hpp"
 #include "instPacket_generated.h"
 

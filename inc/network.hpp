@@ -17,6 +17,7 @@ namespace framework {
 typedef struct _CompileContext {
     bool compile_result = false;
     vector<shared_ptr<NNLayer>> *_sched_layers;
+    vector<shared_ptr<Node>> *_entry_nodes;
     unsigned long total_buffer_size;
 } CompileContext;
 

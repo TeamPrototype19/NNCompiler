@@ -2,6 +2,7 @@ project(nnc)
 cmake_minimum_required(VERSION 3.0)
 include_directories(
 	"${CMAKE_CURRENT_SOURCE_DIR}/inc"
+	"${CMAKE_CURRENT_SOURCE_DIR}/inc/layers"
 	"${CMAKE_CURRENT_SOURCE_DIR}/libs/include"
 	"${CMAKE_CURRENT_SOURCE_DIR}/flatbuffers/include"
 )

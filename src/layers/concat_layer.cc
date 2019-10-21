@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "concat_layer.hpp"
 
 using namespace std;
 namespace framework {
@@ -8,7 +9,13 @@ namespace framework {
 ConcatLayer::ConcatLayer(const caffe::LayerParameter& lparam) 
     : NNLayer(lparam.name(), Concat) {
 
-
+    if( LOG_LEVEL >= 2 ) {
+        logfs << "Read layer result -------------------\n";
+        logfs << "name = " << _name << "\n";
+        logfs << "type = " << ltype2str[ _layer_type ] << "\n";
+        logfs << "+ internal info\n";
+        logfs << "\n";
+    }
 }
 
 ConcatLayer::~ConcatLayer(void) {
