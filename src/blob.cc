@@ -47,8 +47,26 @@ void Blob::set_mem_addr(unsigned long addr) {
     _addr = addr;
 }
 
+void Blob::set_producer(int i, shared_ptr<NNLayer> lp) {
+    set_predecessor( i, static_pointer_cast<Node>(lp) );
+}
+
+void Blob::set_consumer(int i, shared_ptr<NNLayer> lp) {
+    set_successor( i, static_pointer_cast<Node>(lp) );
+}
+
 unsigned long Blob::get_mem_addr(void) {
     return _addr;
+}
+
+bool Blob::isSameSize(vector<int> dim) {
+    if( _dim.size() != dim.size() )
+        return false;
+    for(unsigned int i = 0; i < _dim.size(); i++) {
+        if( _dim[i] != _dim[i] )
+            return false;
+    }
+    return true;
 }
 
 string Blob::getSizeInfoStr(void) {

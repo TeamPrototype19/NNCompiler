@@ -89,6 +89,83 @@ shared_ptr<Blob> NNLayer::GetInBlobPtr(int i) {
     return dynamic_pointer_cast<Blob>(_predecessor[i]);
 }
 
+void NNLayer::SetOutBlobPtr(int i, shared_ptr<Blob> bp) {
+    set_successor(i, bp);
+}
+
+void NNLayer::SetInBlobPtr(int i, shared_ptr<Blob> bp) {
+    set_predecessor(i, bp);
+}
+
+/* Get connected previous layer pointers
+ */
+vector<shared_ptr<NNLayer>> NNLayer::GetPrevConnLayers(void) {
+    vector<shared_ptr<NNLayer>> s;
+
+    for(auto bnode : _predecessor) {
+        for(auto lnode : bnode->get_predecessor()) {
+            auto layer = dynamic_pointer_cast<NNLayer>(lnode);
+            assert( layer != nullptr );
+            s.push_back( layer );
+        }
+    }
+
+    return s;
+}
+
+/* Get connected next layer pointers
+ */
+vector<shared_ptr<NNLayer>> NNLayer::GetNextConnLayers(void) {
+    vector<shared_ptr<NNLayer>> s;
+
+    for(auto bnode : _successor) {
+        for(auto lnode : bnode->get_successor()) {
+            auto layer = dynamic_pointer_cast<NNLayer>(lnode);
+            assert( layer != nullptr );
+            s.push_back( layer );
+        }
+    }
+
+    return s;
+}
+
+/* Drop Layer: 
+ * removes this layer and connects its outputs and inputs
+ * drop is only possible when 
+ * i)   the layer has only 1 input and 1 output blob.
+ * ii)  its input and output size are exactly same.
+ * iii) prev layer also should have 1-output blob.
+ * e.g. Relu, BatchNorm, Scale, etc.
+ */
+void NNLayer::DropLayer(void) {
+    logfs << "DropLayer is called.\n";
+    /* Drop layer condition check
+     */
+    // condition i: 1-input and 1-output blob
+    assert( GetInBlobSize() == GetOutBlobSize() );
+
+    // condition ii: input and output blob size are same.
+    auto bp_p = GetInBlobPtr(0);
+    auto bp_n = GetOutBlobPtr(0);
+    assert( bp_p->isSameSize(bp_n->get_dim()) );
+
+    // condition iii: its prev layer also should have only 1-output blob.
+    auto layer_p = GetPrevConnLayers();
+    auto layer_n = GetNextConnLayers();
+    assert( layer_p.size() == 1 );
+    assert( layer_p[0]->GetOutBlobSize() == 1 );
+    //assert( layer_n.size() == 1 );
+    //assert( layer_n[0]->GetInBlobSize() == 1 );
+
+    /* Drop layer processing
+     */
+    bp_p->set_consumer(0, layer_n[0]);
+    layer_n[0]->SetInBlobPtr(0,  bp_p);
+    // TODO: remove layer and blob class instance clearly.
+
+    return;
+}
+
 flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<NNFramework::TileInfo>>>
 NNLayer::setInTileInfo(flatbuffers::FlatBufferBuilder &builder) {
     /* Input tile info setting

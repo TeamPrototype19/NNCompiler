@@ -33,9 +33,12 @@ public:
     void set_dim(std::vector<int> dim);
     vector<int> get_dim(void);
     string getSizeInfoStr(void);
+    bool isSameSize(vector<int> dim);
 
     void add_producer(shared_ptr<NNLayer> lp);
     void add_consumer(shared_ptr<NNLayer> lp);
+    void set_producer(int i, shared_ptr<NNLayer> lp);
+    void set_consumer(int i, shared_ptr<NNLayer> lp);
     void set_mem_addr(unsigned long addr);
     unsigned long get_mem_addr(void);
 

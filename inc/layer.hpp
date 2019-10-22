@@ -44,6 +44,12 @@ public:
     int  GetOutBlobSize(void);
     shared_ptr<Blob> GetInBlobPtr(int i);
     shared_ptr<Blob> GetOutBlobPtr(int i);
+    void SetInBlobPtr(int i, shared_ptr<Blob> bp);
+    void SetOutBlobPtr(int i, shared_ptr<Blob> bp);
+    vector<shared_ptr<NNLayer>> GetPrevConnLayers(void);
+    vector<shared_ptr<NNLayer>> GetNextConnLayers(void);
+
+    void DropLayer(void);
 
     virtual void ComputeOutputSize(void) = 0;
     virtual string getLayerInfoStr(void) = 0;

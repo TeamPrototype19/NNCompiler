@@ -35,6 +35,8 @@ protected:
     void add_successor(shared_ptr<Node> np);
     void set_predecessor(vector<shared_ptr<Node>> np_list);
     void set_successor(vector<shared_ptr<Node>> np_list);
+    void set_predecessor(int i, shared_ptr<Node> np);
+    void set_successor(int i, shared_ptr<Node> np);
 };
 
 }

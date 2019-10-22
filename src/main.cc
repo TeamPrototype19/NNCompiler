@@ -107,5 +107,7 @@ int main(int argc, char **argv) {
 
     close_log_file();
 
+    cout << "Compilng is finished.\n";
+
 	return 0;
 }

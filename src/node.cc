@@ -2,6 +2,7 @@
 #include <fstream>
 #include <queue>
 #include <stack>
+#include <cassert>
 
 #include "node.hpp"
 
@@ -67,6 +68,16 @@ void Node::set_predecessor(vector<shared_ptr<Node>> np_list) {
 void Node::set_successor(vector<shared_ptr<Node>> np_list) {
     _successor.clear();
     _successor = np_list;
+}
+
+void Node::set_predecessor(int i, shared_ptr<Node> np) {
+    assert( i < get_indegree() );
+    _predecessor[i] = np;
+}
+
+void Node::set_successor(int i, shared_ptr<Node> np) {
+    assert( i < get_outdegree() );
+    _successor[i] = np;
 }
 
 }   // namespace framework

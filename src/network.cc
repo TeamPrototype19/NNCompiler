@@ -36,6 +36,7 @@ Network::Network(const caffe::NetParameter &net, string type) {
     map<string, string> inplace_name;
     map<string, int>    inplace_cnt;
 
+    cout << "Compilng phase: NetworkConstruction\n";
 
     // set graph
     if( net.has_name() )
@@ -85,13 +86,14 @@ Network::Network(const caffe::NetParameter &net, string type) {
 
     /* Layer processing
      */
+    logfs << "# Layer processing ------------\n";
     for(int i = 0; i < net.layer_size(); i++) {
         const caffe::LayerParameter& lparam = net.layer(i);
         shared_ptr<NNLayer> p_layer = create_layer( lparam );
         _nodes.push_back( p_layer );
         _name2layers.insert( make_pair(p_layer->get_name(), p_layer) );
 
-        cout << "processing... : " << lparam.name() << endl;
+        logfs << "processing... : " << lparam.name() << endl;
 
         /* Bottom Connection processing
          */
@@ -152,11 +154,15 @@ Network::Network(const caffe::NetParameter &net, string type) {
     }
 
 #if 1   // DEBUG
+    logfs << "------ layer report -------------\n";
     for(auto layer: _sched_layers) {
-        cout << "name = " << layer->get_name();
-        cout << "\ttype = " << layer->get_layer_type_str() << endl;
+        logfs << "name = " << layer->get_name();
+        logfs << "\ttype = " << layer->get_layer_type_str() << endl;
     }
 #endif
+
+    cout << "Processed layer number = " << _name2layers.size() << "\n";
+    cout << "Processed blob  number = " << _name2blobs.size() << "\n";
     
     return;
 }
@@ -215,14 +221,14 @@ shared_ptr<NNLayer> Network::create_layer(const caffe::LayerParameter& lparam) {
 
 
 void Network::loadWeight(const caffe::NetParameter& wgt) {
-    cout << "Network::loadWeight() processing...\n";
+    cout << "Compilng phase: LoadingWeights\n";
 
     for(int i = 0; i < wgt.layer_size(); i++) {
         const caffe::LayerParameter& lparam = wgt.layer(i);
         if( lparam.blobs_size() > 0 ) {
             // Find layer pointer
             if( _name2layers.find( lparam.name() ) == _name2layers.end() ) {
-                cout << "layer name = " << lparam.name() << endl;
+                //cout << "layer name = " << lparam.name() << endl;
                 throw runtime_error("Network::loadWeight; Can't find layer name!");
             }
             auto layer = _name2layers[ lparam.name() ];
@@ -413,6 +419,7 @@ void Network::Compiling(void) {
 
     /* PHASE 1: Network optimization
      */
+    NetworkOptimization( context );
 
     /* PHASE 2: memory address allocation (mapping)
      */
@@ -431,6 +438,37 @@ void Network::Compiling(void) {
     }
 
     return;
+}
+
+void Network::NetworkOptimization(CompileContext &context) {
+    cout << "Compilng phase: NetworkOptimization\n";
+#if 1
+    for(auto layer : *(context._sched_layers)) {
+        logfs << "Checking... '" << layer->get_name() << "'.\n";
+        if( layer->get_layer_type() == BatchNorm ) {
+            logfs << "BatchNorm layer is detected!\n";
+            auto p_layer = layer->GetPrevConnLayers();
+            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution )
+                layer->DropLayer();
+        }
+        else if( layer->get_layer_type() == Scale ) {
+            logfs << "Scale layer is detected!\n";
+            auto p_layer = layer->GetPrevConnLayers();
+            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution )
+                layer->DropLayer();
+        }
+        else if( layer->get_layer_type() == Relu ) {
+            logfs << "Relu layer is detected!\n";
+            auto p_layer = layer->GetPrevConnLayers();
+            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution )
+                layer->DropLayer();
+        }
+    }
+
+    /* Re-scheduling
+     */
+    _sched_layers = ScheduleLayers();
+#endif
 }
 
 void Network::GenerateCompiledOutput(CompileContext &context) {
@@ -474,7 +512,7 @@ void Network::GenerateCompiledOutput(CompileContext &context) {
      */
     cout << "Compilng phase: GenerateCompiledOutput\n";
     for(auto layer : *(context._sched_layers)) {
-        cout << "Compiling... '" << layer->get_name() << "'.\n";
+        //cout << "Compiling... '" << layer->get_name() << "'.\n";
         insts.push_back( layer->GenerateCompiledOutput(builder) );
     }
 

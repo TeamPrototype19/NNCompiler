@@ -9,6 +9,8 @@ using namespace std;
 namespace framework {
 
 MemoryAlloc::MemoryAlloc(CompileContext &context) {
+    cout << "Compilng phase: MemoryAllocation\n";
+
     // TODO: check it later for reconfigurability.
     data_unit_size = sizeof(float);
 
@@ -107,7 +109,7 @@ bool MemoryAlloc::MemoryAllocAlgo_v1( CompileContext &context ) {
 
     context.total_buffer_size = free_address;
 
-    cout << "MemoryAllocAlgo_v1 result: total allocated memory = " << free_address << endl;
+    logfs << "MemoryAllocAlgo_v1 result: total allocated memory = " << free_address << endl;
 
     return true;
 }

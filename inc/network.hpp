@@ -44,7 +44,7 @@ public:
      */
     void Compiling(void);
     void GenerateCompiledOutput(CompileContext &context);
-
+    void NetworkOptimization(CompileContext &context);
 private:
     /* Input blob dimension
      */
