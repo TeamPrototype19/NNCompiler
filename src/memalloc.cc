@@ -18,12 +18,15 @@ MemoryAlloc::MemoryAlloc(CompileContext &context) {
 #if 1
     /* DEBUG: Print all buffers address
      */
-    cout << "---------- DEBUG: Memory allocation result ------------" << endl;
+    logfs << "---------- DEBUG: Memory allocation report ------------" << endl;
     for(auto mblk : _mblocks) {
-        cout << "addr = 0x" << std::setfill('0') << std::right << std::setw(8);
-        cout << std::hex << mblk.first->get_mem_addr() << "\t";
-        cout << "buffer name = " << mblk.first->get_name() << "\n";
+        logfs << "buffer name = " << std::right << std::setw(30) << mblk.first->get_name() << "     ";
+        logfs << "addr = 0x" << std::setfill('0') << std::right << std::setw(8) \
+              << std::hex << mblk.first->get_mem_addr() << std::dec << std::setfill(' ') << "     ";
+        logfs << "size = " << std::right << std::setw(8) << mblk.second.size_in_byte << "(Bytes)" \
+              << " (" << (mblk.second.size_in_byte/(1000)) << " KB)\n";
     }
+    logfs << "-------------------------------------------------------" << endl;
 #endif
 }
 
@@ -80,6 +83,16 @@ bool MemoryAlloc::MemoryAllocAlgo_v1( CompileContext &context ) {
      * + Linearly allocates all output buffers of all layers
      */
     unsigned long free_address = 0;
+
+    /* Memory allocation for entry_nodes (not layer type) firstly.
+     */
+    for(auto node : *(context._entry_nodes) )  {
+        auto bp = dynamic_pointer_cast<Blob>(node);
+        if( bp ) {
+            bp->set_mem_addr( free_address );
+            free_address += (unsigned long) _mblocks[ bp ].size_in_byte;
+        }
+    }
 
     for(auto layer : *(context._sched_layers) )  {
         /* Allocates memory block for Output blob

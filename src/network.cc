@@ -425,6 +425,29 @@ void Network::GenerateCompiledOutput(CompileContext &context) {
     insts.push_back( CreateInstruction( builder, NNFramework::OpCode_MemAlloc, 
             NNFramework::OpInfo_MemAlloc, mainfo.Union() ) );
     
+    /* Generates Flatbuffer for the first node (not layer type)
+     * (if it is necessary), add input_layer typed flat buffer.
+     */
+    for(auto node : *(context._entry_nodes)) {
+        shared_ptr<Blob> blob_p = dynamic_pointer_cast<Blob>(node);
+        if( blob_p ) {
+            unsigned long maddr = blob_p->get_mem_addr();
+
+            auto tsize = builder.CreateVector( blob_p->get_dim() );
+            auto tsinfo = NNFramework::CreateTileInfo( builder, maddr, tsize );
+
+            std::vector<flatbuffers::Offset<NNFramework::TileInfo>> tsinfo_vector;
+            tsinfo_vector.push_back( tsinfo );
+            auto otiles = builder.CreateVector( tsinfo_vector );
+
+            auto name = builder.CreateString( blob_p->get_name() );
+            auto opinfo = NNFramework::CreateInput(builder, name, otiles);
+
+            insts.push_back( CreateInstruction(builder, NNFramework::OpCode_Input, 
+                    NNFramework::OpInfo_Input, opinfo.Union()) );
+        }
+    }
+
     /* Generates Flatbuffer for each execution layer.
      */
     cout << "Compilng phase: GenerateCompiledOutput\n";
