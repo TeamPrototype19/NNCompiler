@@ -256,6 +256,25 @@ void Network::loadWeight(const caffe::NetParameter& wgt) {
                         flayer->setBias( lparam.blobs(1).data(j) , j );
                 }
             }
+            else if( layer->get_layer_type() == BatchNorm ) {
+                int blobs_size = lparam.blobs_size();
+                assert( blobs_size < 4 );
+                auto blayer = static_pointer_cast<BatchNormLayer>(layer);
+
+                blayer->resizeMean( lparam.blobs(0).data_size() );
+                for(int j = 0 ; j < lparam.blobs(0).data_size() ; j++)
+                    blayer->setMean( lparam.blobs(0).data(j) , j );
+
+                if( blobs_size >= 2 ) {
+                    blayer->resizeVars( lparam.blobs(1).data_size() );
+                    for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
+                        blayer->setVars( lparam.blobs(1).data(j) , j );
+                }
+                if( blobs_size == 3 )
+                    blayer->setEps( lparam.blobs(2).data(0) );
+                else
+                    blayer->setEps( 1.0 );
+            }
             else if( layer->get_layer_type() == Scale ) {
                 assert( lparam.blobs_size() == 1 || lparam.blobs_size() == 2 );
                 auto slayer = static_pointer_cast<ScaleLayer>(layer);
@@ -392,7 +411,10 @@ void Network::Compiling(void) {
     context._sched_layers = &_sched_layers;
     context._entry_nodes = &_entry_nodes;
 
-    /* PHASE 1: memory address allocation (mapping)
+    /* PHASE 1: Network optimization
+     */
+
+    /* PHASE 2: memory address allocation (mapping)
      */
     MemoryAlloc  memalloc( context );
     if( context.compile_result == false ) {
@@ -400,7 +422,7 @@ void Network::Compiling(void) {
         return;
     }
 
-    /* PHASE 2: Generate compiled output (temp)
+    /* PHASE 3: Generate compiled output (temp)
      */
     GenerateCompiledOutput( context );
     if( context.compile_result == false ) {
