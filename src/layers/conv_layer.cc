@@ -16,6 +16,8 @@ ConvLayer::ConvLayer(const caffe::LayerParameter& lparam)
 
     _weight = nullptr;
     _bias = nullptr;
+    _weight_size = 0;
+    _bias_size = 0;
     _kernel_w = 1;
     _kernel_h = 1;
     _stride_w = 1;

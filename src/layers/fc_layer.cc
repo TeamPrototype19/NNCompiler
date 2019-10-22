@@ -14,6 +14,8 @@ FullyConnectedLayer::FullyConnectedLayer(const caffe::LayerParameter& lparam)
 
     _weight = nullptr;
     _bias = nullptr;
+    _weight_size = 0;
+    _bias_size = 0;
 
     _num_output = param.num_output();
 }

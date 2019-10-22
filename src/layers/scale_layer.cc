@@ -9,6 +9,11 @@ namespace framework {
 ScaleLayer::ScaleLayer(const caffe::LayerParameter& lparam) 
     : NNLayer(lparam.name(), Scale) {
 
+    _weight = nullptr;
+    _bias = nullptr;
+    _weight_size = 0;
+    _bias_size = 0;
+
     if( LOG_LEVEL >= 2 ) {
         logfs << "Read layer result -------------------\n";
         logfs << "name = " << _name << "\n";
