@@ -24,6 +24,8 @@ public:
     vector<shared_ptr<Node>> get_successor(void);
     shared_ptr<Node> get_predecessor(int i);
     shared_ptr<Node> get_successor(int i);
+    int get_predecessor_idx(shared_ptr<Node> np);
+    int get_successor_idx(shared_ptr<Node> np);
 
 protected:
     string _name;

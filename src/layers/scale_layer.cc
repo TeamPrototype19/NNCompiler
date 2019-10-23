@@ -39,7 +39,6 @@ string ScaleLayer::getLayerInfoStr(void) {
 }
 
 void ScaleLayer::FusingOperation(shared_ptr<ConvLayer> clayer) {
-#if 1
     /* Fusing the scale and bias with weight and bias of Convolution.
      */
     int conv_weight_size = clayer->getWeightSize();
@@ -59,7 +58,6 @@ void ScaleLayer::FusingOperation(shared_ptr<ConvLayer> clayer) {
             clayer->setBias(((clayer->getBias(i) * _scale[i]) + _bias[i]), i);
         }
     }
-#endif
 
     return;
 }

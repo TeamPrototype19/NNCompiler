@@ -43,4 +43,11 @@ ReluLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
             NNFramework::OpInfo_Relu, opinfo.Union() );
 }
 
+void ReluLayer::FusingOperation(shared_ptr<ConvLayer> clayer) {
+    /* Fusing: set the flag of '_relu_op_en' of ConvLayer.
+     */
+    clayer->setReluOpEn(true);
+    return;
+}
+
 }   // namespace framework

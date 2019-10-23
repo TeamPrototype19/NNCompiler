@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "layer.hpp"
+#include "conv_layer.hpp"
 #include "blob.hpp"
 #include "instPacket_generated.h"
 
@@ -21,6 +22,8 @@ public:
     virtual string getLayerInfoStr(void) override;
     virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
+
+    void FusingOperation(shared_ptr<ConvLayer> clayer);
 
 private:
 };

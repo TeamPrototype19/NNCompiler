@@ -89,6 +89,14 @@ shared_ptr<Blob> NNLayer::GetInBlobPtr(int i) {
     return dynamic_pointer_cast<Blob>(_predecessor[i]);
 }
 
+int NNLayer::GetInBlobIdx(shared_ptr<Blob> bp) {
+    return get_predecessor_idx(bp);
+}
+
+int NNLayer::GetOutBlobIdx(shared_ptr<Blob> bp) {
+    return get_successor_idx(bp);
+}
+
 void NNLayer::SetOutBlobPtr(int i, shared_ptr<Blob> bp) {
     set_successor(i, bp);
 }
@@ -138,7 +146,7 @@ vector<shared_ptr<NNLayer>> NNLayer::GetNextConnLayers(void) {
  * e.g. Relu, BatchNorm, Scale, etc.
  */
 void NNLayer::DropLayer(void) {
-    logfs << "DropLayer is called.\n";
+    //logfs << "DropLayer is called.\n";
     /* Drop layer condition check
      */
     // condition i: 1-input and 1-output blob
@@ -159,9 +167,14 @@ void NNLayer::DropLayer(void) {
 
     /* Drop layer processing
      */
-    bp_p->set_consumer(0, layer_n[0]);
-    layer_n[0]->SetInBlobPtr(0,  bp_p);
-    // TODO: remove layer and blob class instance clearly.
+    for(auto next_layer : layer_n) {
+        int next_layer_iblob_index = next_layer->GetInBlobIdx(bp_n);
+        assert( next_layer_iblob_index >= 0);
+        next_layer->SetInBlobPtr(next_layer_iblob_index,  bp_p);
+        // TODO: remove layer and blob class instance clearly.
+        //logfs << "DROP:: " << _name << "\tnlayer_ib_idx = " << next_layer_iblob_index << "\n";
+    }
+    bp_p->set_consumer(layer_n);  /// ??????
 
     return;
 }

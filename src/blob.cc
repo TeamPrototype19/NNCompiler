@@ -55,6 +55,20 @@ void Blob::set_consumer(int i, shared_ptr<NNLayer> lp) {
     set_successor( i, static_pointer_cast<Node>(lp) );
 }
 
+void Blob::set_producer(vector<shared_ptr<NNLayer>> lp) {
+    vector<shared_ptr<Node>> a;
+    for(auto b : lp)
+        a.push_back( static_pointer_cast<Node>(b) );
+    set_predecessor( a );
+}
+
+void Blob::set_consumer(vector<shared_ptr<NNLayer>> lp) {
+    vector<shared_ptr<Node>> a;
+    for(auto b : lp)
+        a.push_back( static_pointer_cast<Node>(b) );
+    set_successor( a );
+}
+
 unsigned long Blob::get_mem_addr(void) {
     return _addr;
 }

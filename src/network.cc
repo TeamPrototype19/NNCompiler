@@ -318,6 +318,8 @@ vector<shared_ptr<NNLayer>> Network::ScheduleLayers(void) {
     stack<shared_ptr<Node>> vs;        // visit stack
     vector<shared_ptr<NNLayer>> nnlayer_list;
     shared_ptr<Node> np;
+
+    //logfs << "============= ScheduleLayers() ====================\n";
     
     /* Initialize visi flags
      */
@@ -336,6 +338,8 @@ vector<shared_ptr<NNLayer>> Network::ScheduleLayers(void) {
         if( vf[ np ] == false ) {
             vf[ np ] = true;
 
+            //logfs << "Visit at node: " << np->get_name() << "\n";
+
             /* Save the node pointer if the node is NNLayer
              */
             shared_ptr<NNLayer> nnlayer;
@@ -343,19 +347,25 @@ vector<shared_ptr<NNLayer>> Network::ScheduleLayers(void) {
                 nnlayer_list.push_back( nnlayer );
 
             for(int i = np->get_outdegree()-1; i >= 0; i--) {
-                if( vf[ np->get_successor(i) ] == false ) {
-                    auto succ = np->get_successor(i);
+                auto succ = np->get_successor(i);
+                //logfs << "  + succ is checked: " << succ->get_name() << "\n";
+                if( vf[ succ ] == false ) {
                     /* check that the node can be visited.
                      * Condition of visit: predecessors of the node
                      * should be already visited.
                      */
                     bool visit_possible = true;
-                    for(auto nd : succ->get_predecessor())
+                    for(auto nd : succ->get_predecessor()) {
                         if( vf[ nd ] == false )
                             visit_possible = false;
+                        //logfs << "     " << nd->get_name() << " is " \
+                              << (vf[nd] ? "visited\n" : "not visited yet\n");
+                    }
 
-                    if( visit_possible )
-                        vs.push( np->get_successor(i) );
+                    if( visit_possible ) {
+                        vs.push( succ );
+                        //logfs << "     -> node is pushed \n";
+                    }
                 }
 
             }
@@ -449,6 +459,16 @@ void Network::NetworkOptimization(CompileContext &context) {
 #if 1
     for(auto layer : *(context._sched_layers)) {
         logfs << "Checking... '" << layer->get_name() << "'.\n";
+#if 0
+        logfs << "    + Inputs\n";
+        for(int i = 0; i < layer->GetInBlobSize(); i++)
+        logfs << "         " << layer->GetInBlobPtr(i)->get_name() << "\n";
+        logfs << "    + Outputs\n";
+        for(int i = 0; i < layer->GetOutBlobSize(); i++)
+        logfs << "         " << layer->GetOutBlobPtr(i)->get_name() << "\n";
+#endif
+
+
         if( layer->get_layer_type() == BatchNorm ) {
             logfs << "BatchNorm layer is detected!\n";
             auto c_layer = dynamic_pointer_cast<BatchNormLayer>(layer);
@@ -467,19 +487,27 @@ void Network::NetworkOptimization(CompileContext &context) {
                 c_layer->DropLayer();
             }
         }
-#if 0
         else if( layer->get_layer_type() == Relu ) {
             logfs << "Relu layer is detected!\n";
+            auto c_layer = dynamic_pointer_cast<ReluLayer>(layer);
             auto p_layer = layer->GetPrevConnLayers();
-            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution )
-                layer->DropLayer();
+            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution ) {
+                c_layer->FusingOperation(dynamic_pointer_cast<ConvLayer>(p_layer[0]));
+                c_layer->DropLayer();
+            }
         }
-#endif
     }
 
     /* Re-scheduling
      */
     _sched_layers = ScheduleLayers();
+#if 0
+    // display rescheduled result
+    logfs << "----- Rescheduling result -----\n";
+    for(auto layer : _sched_layers) {
+        logfs << layer->get_name() << "\n";
+    }
+#endif
 #endif
 }
 

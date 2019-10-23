@@ -39,6 +39,9 @@ public:
     void add_consumer(shared_ptr<NNLayer> lp);
     void set_producer(int i, shared_ptr<NNLayer> lp);
     void set_consumer(int i, shared_ptr<NNLayer> lp);
+    void set_producer(vector<shared_ptr<NNLayer>> lp);
+    void set_consumer(vector<shared_ptr<NNLayer>> lp);
+
     void set_mem_addr(unsigned long addr);
     unsigned long get_mem_addr(void);
 

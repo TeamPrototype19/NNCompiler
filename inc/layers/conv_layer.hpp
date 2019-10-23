@@ -31,6 +31,7 @@ public:
     int getWeightSize(void);
     int getBiasSize(void);
     void initBiasZero(void);
+    void setReluOpEn(bool en);
 
 private:
     int _weight_size;
@@ -42,6 +43,7 @@ private:
     int _pad_w, _pad_h;
     int _group;
     int _num_output;
+    bool _relu_op_en;
 };
 
 }   // namespace framework

@@ -80,4 +80,18 @@ void Node::set_successor(int i, shared_ptr<Node> np) {
     _successor[i] = np;
 }
 
+int Node::get_predecessor_idx(shared_ptr<Node> np) {
+    for(unsigned int i = 0; i < _predecessor.size(); i++)
+        if( _predecessor[i] == np )
+            return i;
+    return -1;
+}
+
+int Node::get_successor_idx(shared_ptr<Node> np) {
+    for(unsigned int i = 0; i < _successor.size(); i++)
+        if( _successor[i] == np )
+            return i;
+    return -1;
+}
+
 }   // namespace framework

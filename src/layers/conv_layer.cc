@@ -24,6 +24,7 @@ ConvLayer::ConvLayer(const caffe::LayerParameter& lparam)
     _stride_h = 1;
     _pad_w = 0;
     _pad_h = 0;
+    _relu_op_en = false;
 
     if( param.has_pad_w() )
         _pad_w = param.pad_w();
@@ -148,7 +149,7 @@ ConvLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Create Conv table structure 
      */
     auto opinfo = NNFramework::CreateConv(builder, name, _kernel_w, _kernel_h,
-            _stride_w, _stride_h, _pad_w, _pad_h, 
+            _stride_w, _stride_h, _pad_w, _pad_h, _relu_op_en,
             weight, bias, itiles, otiles );
 
     /* Generate instruction
@@ -203,6 +204,10 @@ void ConvLayer::initBiasZero(void) {
     resizeBias(_num_output);
     for(int i = 0; i < _bias_size; i++)
         setBias(0, i);
+}
+
+void ConvLayer::setReluOpEn(bool en) {
+    _relu_op_en = en;
 }
 
 }   // namespace framework

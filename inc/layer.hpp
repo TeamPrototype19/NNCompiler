@@ -44,6 +44,8 @@ public:
     int  GetOutBlobSize(void);
     shared_ptr<Blob> GetInBlobPtr(int i);
     shared_ptr<Blob> GetOutBlobPtr(int i);
+    int GetInBlobIdx(shared_ptr<Blob> bp);
+    int GetOutBlobIdx(shared_ptr<Blob> bp);
     void SetInBlobPtr(int i, shared_ptr<Blob> bp);
     void SetOutBlobPtr(int i, shared_ptr<Blob> bp);
     vector<shared_ptr<NNLayer>> GetPrevConnLayers(void);
