@@ -1,6 +1,10 @@
+#ifndef _SCALE_LAYER_HPP_
+#define _SCALE_LAYER_HPP_
+
 #include <iostream>
 
 #include "layer.hpp"
+#include "conv_layer.hpp"
 
 using namespace std;
 namespace framework {
@@ -16,16 +20,19 @@ public:
     virtual flatbuffers::Offset<NNFramework::Instruction> 
         GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) override;
 
-    void resizeWeight(int size);
+    void resizeScale(int size);
     void resizeBias(int size);
-    void setWeight(float val, int index);
+    void setScale(float val, int index);
     void setBias(float val, int index);
 
+    void FusingOperation(shared_ptr<ConvLayer> clayer);
+
 private:
-    int _weight_size;
+    int _scale_size;
     int _bias_size;
-    float *_weight;
+    float *_scale;
     float *_bias;
 };
 
 }   // namespace framework
+#endif // _SCALE_LAYER_HPP_

@@ -1,3 +1,6 @@
+#ifndef _CONV_LAYER_HPP_
+#define _CONV_LAYER_HPP_
+
 #include <iostream>
 
 #include "layer.hpp"
@@ -23,6 +26,11 @@ public:
     void resizeBias(int size);
     void setWeight(float val, int index);
     void setBias(float val, int index);
+    float getWeight(int index);
+    float getBias(int index);
+    int getWeightSize(void);
+    int getBiasSize(void);
+    void initBiasZero(void);
 
 private:
     int _weight_size;
@@ -37,3 +45,4 @@ private:
 };
 
 }   // namespace framework
+#endif  // _CONV_LAYER_HPP_

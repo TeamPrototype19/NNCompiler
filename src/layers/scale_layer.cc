@@ -9,9 +9,9 @@ namespace framework {
 ScaleLayer::ScaleLayer(const caffe::LayerParameter& lparam) 
     : NNLayer(lparam.name(), Scale) {
 
-    _weight = nullptr;
+    _scale = nullptr;
     _bias = nullptr;
-    _weight_size = 0;
+    _scale_size = 0;
     _bias_size = 0;
 
     if( LOG_LEVEL >= 2 ) {
@@ -23,8 +23,8 @@ ScaleLayer::ScaleLayer(const caffe::LayerParameter& lparam)
 }
 
 ScaleLayer::~ScaleLayer(void) {
-    if( _weight != nullptr )
-        delete [] _weight;
+    if( _scale != nullptr )
+        delete [] _scale;
     if( _bias != nullptr )
         delete [] _bias;
 }
@@ -38,6 +38,32 @@ string ScaleLayer::getLayerInfoStr(void) {
     return " (" + ltype2str[ _layer_type ] + ") ";
 }
 
+void ScaleLayer::FusingOperation(shared_ptr<ConvLayer> clayer) {
+#if 1
+    /* Fusing the scale and bias with weight and bias of Convolution.
+     */
+    int conv_weight_size = clayer->getWeightSize();
+    int ch1_weight_size  = conv_weight_size / _scale_size;
+    for(int i = 0; i < _scale_size; i++) {
+        for(int j = 0; j < ch1_weight_size; j++) {
+            int widx = i*ch1_weight_size + j;
+            clayer->setWeight((clayer->getWeight(widx) / _scale[i]), widx);
+        }
+    }
+
+    if( _bias_size > 0 ) {
+        int conv_bias_size   = clayer->getBiasSize();
+        assert( conv_bias_size == _bias_size );
+        assert( _scale_size == _bias_size );
+        for(int i = 0; i < _bias_size; i++) {
+            clayer->setBias(((clayer->getBias(i) * _scale[i]) + _bias[i]), i);
+        }
+    }
+#endif
+
+    return;
+}
+
 flatbuffers::Offset<NNFramework::Instruction> 
 ScaleLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     /* Scale OP code generation
@@ -48,15 +74,15 @@ ScaleLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
     auto itiles = setInTileInfo( builder );
     auto otiles = setOutTileInfo( builder );
 
-    /* Weight & Bias array setting 
+    /* Scale & Bias array setting 
      */
     auto name = builder.CreateString(_name);
-    auto weight = builder.CreateVector( _weight, _weight_size );
-    auto bias   = builder.CreateVector( _bias  , _bias_size   );
+    auto scale = builder.CreateVector( _scale , _scale_size );
+    auto bias  = builder.CreateVector( _bias  , _bias_size   );
 
     /* Create Conv table structure 
      */
-    auto opinfo = NNFramework::CreateScale(builder, name, weight, bias, itiles, otiles );
+    auto opinfo = NNFramework::CreateScale(builder, name, scale, bias, itiles, otiles );
 
     /* Generate instruction
      */
@@ -64,11 +90,11 @@ ScaleLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
             NNFramework::OpInfo_Scale, opinfo.Union() );
 }
 
-void ScaleLayer::resizeWeight(int size) {
-    if( _weight != nullptr )
-        delete [] _weight;
-    _weight = new float[ size ];
-    _weight_size = size;
+void ScaleLayer::resizeScale(int size) {
+    if( _scale != nullptr )
+        delete [] _scale;
+    _scale = new float[ size ];
+    _scale_size = size;
 }
 
 void ScaleLayer::resizeBias(int size) {
@@ -78,9 +104,9 @@ void ScaleLayer::resizeBias(int size) {
     _bias_size = size;
 }
 
-void ScaleLayer::setWeight(float val, int index) {
-    assert( index < _weight_size );
-    _weight[ index ] = val;
+void ScaleLayer::setScale(float val, int index) {
+    assert( index < _scale_size );
+    _scale[ index ] = val;
 }
 
 void ScaleLayer::setBias(float val, int index) {

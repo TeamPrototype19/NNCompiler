@@ -1,3 +1,6 @@
+#ifndef _DROP_LAYER_HPP_
+#define _DROP_LAYER_HPP_
+
 #include <iostream>
 
 #include "layer.hpp"
@@ -20,3 +23,4 @@ private:
 };
 
 }   // namespace framework
+#endif // _DROP_LAYER_HPP_

@@ -247,6 +247,10 @@ void Network::loadWeight(const caffe::NetParameter& wgt) {
                     for(int j = 0 ; j < lparam.blobs(1).data_size() ; j++)
                         clayer->setBias( lparam.blobs(1).data(j) , j );
                 }
+                else {
+                    // bias zero initialization
+                    clayer->initBiasZero();
+                }
             }
             else if( layer->get_layer_type() == FullyConnected ) {
                 assert( lparam.blobs_size() == 1 || lparam.blobs_size() == 2 );
@@ -277,17 +281,17 @@ void Network::loadWeight(const caffe::NetParameter& wgt) {
                         blayer->setVars( lparam.blobs(1).data(j) , j );
                 }
                 if( blobs_size == 3 )
-                    blayer->setEps( lparam.blobs(2).data(0) );
+                    blayer->setScale( lparam.blobs(2).data(0) );
                 else
-                    blayer->setEps( 1.0 );
+                    blayer->setScale( 1.0 );
             }
             else if( layer->get_layer_type() == Scale ) {
                 assert( lparam.blobs_size() == 1 || lparam.blobs_size() == 2 );
                 auto slayer = static_pointer_cast<ScaleLayer>(layer);
 
-                slayer->resizeWeight( lparam.blobs(0).data_size() );
+                slayer->resizeScale( lparam.blobs(0).data_size() );
                 for(int j = 0 ; j < lparam.blobs(0).data_size() ; j++)
-                    slayer->setWeight( lparam.blobs(0).data(j) , j );
+                    slayer->setScale( lparam.blobs(0).data(j) , j );
 
                 if( lparam.blobs_size() == 2 ) {
                     slayer->resizeBias( lparam.blobs(1).data_size() );
@@ -447,22 +451,30 @@ void Network::NetworkOptimization(CompileContext &context) {
         logfs << "Checking... '" << layer->get_name() << "'.\n";
         if( layer->get_layer_type() == BatchNorm ) {
             logfs << "BatchNorm layer is detected!\n";
+            auto c_layer = dynamic_pointer_cast<BatchNormLayer>(layer);
             auto p_layer = layer->GetPrevConnLayers();
-            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution )
-                layer->DropLayer();
+            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution ) {
+                c_layer->FusingOperation(dynamic_pointer_cast<ConvLayer>(p_layer[0]));
+                c_layer->DropLayer();
+            }
         }
         else if( layer->get_layer_type() == Scale ) {
             logfs << "Scale layer is detected!\n";
+            auto c_layer = dynamic_pointer_cast<ScaleLayer>(layer);
             auto p_layer = layer->GetPrevConnLayers();
-            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution )
-                layer->DropLayer();
+            if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution ) {
+                c_layer->FusingOperation(dynamic_pointer_cast<ConvLayer>(p_layer[0]));
+                c_layer->DropLayer();
+            }
         }
+#if 0
         else if( layer->get_layer_type() == Relu ) {
             logfs << "Relu layer is detected!\n";
             auto p_layer = layer->GetPrevConnLayers();
             if( p_layer.size() == 1 && p_layer[0]->get_layer_type() == Convolution )
                 layer->DropLayer();
         }
+#endif
     }
 
     /* Re-scheduling

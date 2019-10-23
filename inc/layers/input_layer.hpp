@@ -1,3 +1,7 @@
+#ifndef _INPUT_LAYER_HPP_
+#define _INPUT_LAYER_HPP_
+
+
 #include <iostream>
 
 #include "layer.hpp"
@@ -23,3 +27,4 @@ private:
 };
 
 }   // namespace framework
+#endif // _INPUT_LAYER_HPP_

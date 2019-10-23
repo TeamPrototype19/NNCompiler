@@ -1,3 +1,6 @@
+#ifndef _POOL_LAYER_HPP_
+#define _POOL_LAYER_HPP_
+
 #include <iostream>
 
 #include "layer.hpp"
@@ -32,3 +35,4 @@ private:
 };
 
 }   // namespace framework
+#endif // _POOL_LAYER_HPP_

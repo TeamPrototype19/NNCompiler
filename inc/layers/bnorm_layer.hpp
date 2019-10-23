@@ -1,6 +1,10 @@
+#ifndef _BNORM_LAYER_HPP_
+#define _BNORM_LAYER_HPP_
+
 #include <iostream>
 
 #include "layer.hpp"
+#include "conv_layer.hpp"
 
 using namespace std;
 namespace framework {
@@ -20,7 +24,9 @@ public:
     void resizeVars(int size);
     void setMean(float val, int index);
     void setVars(float val, int index);
-    void setEps(float val);
+    void setScale(float val);
+
+    void FusingOperation(shared_ptr<ConvLayer> clayer);
 
 private:
     float  _eps;
@@ -33,3 +39,4 @@ private:
 };
 
 }   // namespace framework
+#endif // _BNORM_LAYER_HPP_

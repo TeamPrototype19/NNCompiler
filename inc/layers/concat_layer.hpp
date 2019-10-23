@@ -1,3 +1,6 @@
+#ifndef _CONCAT_LAYER_HPP_
+#define _CONCAT_LAYER_HPP_
+
 #include <iostream>
 
 #include "layer.hpp"
@@ -21,3 +24,4 @@ private:
 };
 
 }   // namespace framework
+#endif // _CONCAT_LAYER_HPP_

@@ -181,4 +181,28 @@ void ConvLayer::setBias(float val, int index) {
     _bias[ index ] = val;
 }
 
+float ConvLayer::getWeight(int index) {
+    assert( index < _weight_size );
+    return _weight[ index ];
+}
+
+float ConvLayer::getBias(int index) {
+    assert( index < _bias_size );
+    return _bias[ index ];
+}
+
+int ConvLayer::getWeightSize(void) {
+    return _weight_size;
+}
+
+int ConvLayer::getBiasSize(void) {
+    return _bias_size;
+}
+
+void ConvLayer::initBiasZero(void) {
+    resizeBias(_num_output);
+    for(int i = 0; i < _bias_size; i++)
+        setBias(0, i);
+}
+
 }   // namespace framework
