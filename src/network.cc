@@ -468,7 +468,6 @@ void Network::NetworkOptimization(CompileContext &context) {
         logfs << "         " << layer->GetOutBlobPtr(i)->get_name() << "\n";
 #endif
 
-
         if( layer->get_layer_type() == BatchNorm ) {
             logfs << "BatchNorm layer is detected!\n";
             auto c_layer = dynamic_pointer_cast<BatchNormLayer>(layer);
@@ -495,6 +494,10 @@ void Network::NetworkOptimization(CompileContext &context) {
                 c_layer->FusingOperation(dynamic_pointer_cast<ConvLayer>(p_layer[0]));
                 c_layer->DropLayer();
             }
+        }
+        else if( layer->get_layer_type() == Dropout ) {
+            logfs << "Dropout layer is detected!\n";
+            layer->DropLayer();
         }
     }
 
@@ -551,8 +554,9 @@ void Network::GenerateCompiledOutput(CompileContext &context) {
     /* Generates Flatbuffer for each execution layer.
      */
     cout << "Compilng phase: GenerateCompiledOutput\n";
+    logfs<< "Compilng phase: GenerateCompiledOutput\n";
     for(auto layer : *(context._sched_layers)) {
-        //cout << "Compiling... '" << layer->get_name() << "'.\n";
+        logfs << "FB generating... '" << layer->get_name() << "'.\n";
         insts.push_back( layer->GenerateCompiledOutput(builder) );
     }
 

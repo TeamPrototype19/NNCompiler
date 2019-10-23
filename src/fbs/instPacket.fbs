@@ -93,6 +93,7 @@ table Pooling {
     stride_size_h:int;
     pad_size_w:int;
     pad_size_h:int;
+    global_pooling:bool;
     itile:[TileInfo];
     otile:[TileInfo];
 }

@@ -7,7 +7,7 @@ using namespace std;
 namespace framework {
 
 DropoutLayer::DropoutLayer(const caffe::LayerParameter& lparam) 
-    : NNLayer(lparam.name(), Relu) {
+    : NNLayer(lparam.name(), Dropout) {
 }
 
 DropoutLayer::~DropoutLayer(void) {
