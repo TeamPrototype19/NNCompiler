@@ -135,7 +135,8 @@ PoolLayer::GenerateCompiledOutput(flatbuffers::FlatBufferBuilder &builder) {
      */
     auto name = builder.CreateString(_name);
     auto opinfo = NNFramework::CreatePooling(builder, name, _kernel_w, _kernel_h,
-            _stride_w, _stride_h, _pad_w, _pad_h, _global_pooling, itiles, otiles);
+            _stride_w, _stride_h, _pad_w, _pad_h, _global_pooling, _pool_type, 
+            itiles, otiles);
 
     /* Generate instruction
      */

@@ -94,6 +94,7 @@ table Pooling {
     pad_size_w:int;
     pad_size_h:int;
     global_pooling:bool;
+    oper_type:int;
     itile:[TileInfo];
     otile:[TileInfo];
 }

@@ -14,9 +14,9 @@ namespace framework {
  */
 class PoolLayer : public NNLayer {
     enum PoolType {
-        MAX_POOL,
-        AVE_POOL,
-        STOCHASTIC_POOL
+        MAX_POOL=0,
+        AVE_POOL=1,
+        STOCHASTIC_POOL=2
     };
 public:
     PoolLayer(const caffe::LayerParameter& layer_param);
